@@ -83,13 +83,13 @@ function UI:_configure_window(win_id)
     vim.wo[win_id].foldcolumn = "0"
     vim.wo[win_id].spell = false
     vim.wo[win_id].list = false
-    
+
     local winhighlight = "Normal:Normal,FloatBorder:Normal,WinSeparator:Normal,StatusLine:Normal,StatusLineNC:Normal"
     if self.opts.ui and self.opts.ui.winhighlight then
         winhighlight = self.opts.ui.winhighlight
     end
     vim.wo[win_id].winhighlight = winhighlight
-    
+
     vim.wo[win_id].fillchars = "eob: ,horiz: ,horizup: ,horizdown: ,vert: ,vertleft: ,vertright: ,verthoriz: "
     vim.wo[win_id].statusline = " "
 end
