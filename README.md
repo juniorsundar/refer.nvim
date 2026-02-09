@@ -43,7 +43,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
     "juniorsundar/refer.nvim",
     dependencies = {
         -- Optional: specific fuzzy libs if you want to override defaults
-        -- "echasnovski/mini.fuzzy", 
+        -- "nvim-mini/mini.fuzzy", 
     },
     config = function()
         require("refer").setup({
@@ -69,7 +69,9 @@ require("refer").setup({
 
     -- Sorting
     available_sorters = { "blink", "mini", "native", "lua" },
-    default_sorter = "blink", -- Default sorter for static lists
+    default_sorter = "blink", -- Default sorter for static lists.
+                              -- If blink.cmp isn't installed, it will download
+                              -- the compiled library using `curl`.
 
     -- Preview Settings
     preview = {
@@ -128,8 +130,8 @@ require("refer").setup({
 `refer.nvim` exposes a user command `:Refer` with subcommands for each picker.
 
 ### Standard Pickers
-- **`:Refer Commands`**: Search command history (Works almost like Emacs' `M-x`.
-        - Intelligent cycling: `<C-p>`/`<C-n>` cycles through history entries that match your current input prefix.
+- **`:Refer Commands`**: Works almost like Emacs' `M-x` but for Vim. Execute commands interactively.
+    - History cycling: `<C-p>`/`<C-n>` cycles through history entries that match your current input prefix.
 - **`:Refer Files`**: Search files using `fd`. (Async)
 - **`:Refer Grep`**: Live grep using `ripgrep`. (Async)
 - **`:Refer Buffers`**: List open buffers.
