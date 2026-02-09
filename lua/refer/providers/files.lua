@@ -7,11 +7,24 @@ local fuzzy = require "refer.fuzzy"
 
 ---Open file picker using fd command
 ---Files are loaded asynchronously after minimum query length is reached
-function M.files()
+function M.files(opts)
+    opts = opts or {}
+    local config = require("refer.init").pick_async({}, nil, opts).opts
+
     return refer.pick_async(
         function(query)
             local ignored_dirs = { ".git", ".jj", "node_modules", ".cache" }
             local cmd = { "fd", "-H", "--type", "f", "--color", "never" }
+
+            if config.providers and config.providers.files then
+                if config.providers.files.ignored_dirs then
+                    ignored_dirs = config.providers.files.ignored_dirs
+                end
+                if config.providers.files.find_command then
+                    cmd = vim.deepcopy(config.providers.files.find_command)
+                end
+            end
+
             for _, dir in ipairs(ignored_dirs) do
                 table.insert(cmd, "--exclude")
                 table.insert(cmd, dir)
@@ -22,7 +35,7 @@ function M.files()
             return cmd
         end,
         nil,
-        {
+        vim.tbl_deep_extend("force", {
             prompt = "Files > ",
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
@@ -34,28 +47,41 @@ function M.files()
                 pcall(vim.api.nvim_command, 'normal! g`"')
             end,
             post_process = function(output_lines, query)
-                return fuzzy.filter(output_lines, query, { sorter = "lua" })
+                local sorter = "lua"
+                if config.default_sorter and config.default_sorter ~= "blink" then
+                    sorter = config.default_sorter
+                end
+                return fuzzy.filter(output_lines, query, { sorter = sorter })
             end,
-        }
+        }, opts)
     )
 end
 
 ---Open live grep picker using rg command
 ---Results update as you type
-function M.live_grep()
+function M.live_grep(opts)
+    opts = opts or {}
+    local config = require("refer.init").pick_async({}, nil, opts).opts
+
     return refer.pick_async(
         function(query)
-            return { "rg", "--vimgrep", "--smart-case", "--", query }
+            local cmd = { "rg", "--vimgrep", "--smart-case" }
+            if config.providers and config.providers.grep and config.providers.grep.grep_command then
+                cmd = vim.deepcopy(config.providers.grep.grep_command)
+            end
+            table.insert(cmd, "--")
+            table.insert(cmd, query)
+            return cmd
         end,
         util.jump_to_location,
-        {
+        vim.tbl_deep_extend("force", {
             prompt = "Grep > ",
             parser = util.parsers.grep,
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "select_entry",
             },
-        }
+        }, opts)
     )
 end
 

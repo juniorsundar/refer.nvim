@@ -33,10 +33,15 @@ end
 ---@param count number Number of items to display
 ---@return number height Calculated height
 function UI:get_height(count)
-    local percent = self.opts.percent or 0.4
-    local max_height = math.floor(vim.o.lines * percent)
-    local height = math.min(max_height, count)
-    return math.max(1, height)
+    local max_lines = self.opts.max_height
+    if not max_lines then
+        local max_height_percent = self.opts.max_height_percent or 0.4
+        max_lines = math.floor(vim.o.lines * max_height_percent)
+    end
+
+    local height = math.min(max_lines, count)
+    local min_lines = self.opts.min_height or 1
+    return math.max(min_lines, height)
 end
 
 ---Create picker windows
@@ -49,7 +54,7 @@ function UI:create_windows()
     vim.bo[self.input_buf].filetype = "refer_input"
     vim.bo[self.results_buf].filetype = "refer_results"
 
-    vim.cmd("botright " .. self:get_height(0) .. "split")
+    vim.cmd("botright" .. " " .. self:get_height(0) .. "split")
     self.results_win = api.nvim_get_current_win()
     api.nvim_win_set_buf(self.results_win, self.results_buf)
 
@@ -78,8 +83,13 @@ function UI:_configure_window(win_id)
     vim.wo[win_id].foldcolumn = "0"
     vim.wo[win_id].spell = false
     vim.wo[win_id].list = false
-    vim.wo[win_id].winhighlight =
-        "Normal:Normal,FloatBorder:Normal,WinSeparator:Normal,StatusLine:Normal,StatusLineNC:Normal"
+    
+    local winhighlight = "Normal:Normal,FloatBorder:Normal,WinSeparator:Normal,StatusLine:Normal,StatusLineNC:Normal"
+    if self.opts.ui and self.opts.ui.winhighlight then
+        winhighlight = self.opts.ui.winhighlight
+    end
+    vim.wo[win_id].winhighlight = winhighlight
+    
     vim.wo[win_id].fillchars = "eob: ,horiz: ,horizup: ,horizdown: ,vert: ,vertleft: ,vertright: ,verthoriz: "
     vim.wo[win_id].statusline = " "
 end
@@ -88,9 +98,14 @@ end
 ---@param text string Text to display as prompt
 function UI:update_prompt_virtual_text(text)
     if self.input_buf and api.nvim_buf_is_valid(self.input_buf) then
+        local hl_group = "Title"
+        if self.opts.ui and self.opts.ui.highlights and self.opts.ui.highlights.prompt then
+            hl_group = self.opts.ui.highlights.prompt
+        end
+
         api.nvim_buf_clear_namespace(self.input_buf, self.prompt_ns, 0, -1)
         api.nvim_buf_set_extmark(self.input_buf, self.prompt_ns, 0, 0, {
-            virt_text = { { text, "Title" } },
+            virt_text = { { text, hl_group } },
             virt_text_pos = "inline",
             right_gravity = false,
         })
@@ -151,12 +166,19 @@ function UI:render(matches, selected_index, marked)
 
     for i, line in ipairs(visible_matches) do
         local line_idx = i - 1
-        highlight.highlight_entry(self.results_buf, self.ns_id, line_idx, line, true)
+        highlight.highlight_entry(self.results_buf, self.ns_id, line_idx, line, true, self.opts)
 
         if marked and marked[line] then
+            local mark_char = "●"
+            local mark_hl = "String"
+            if self.opts.ui then
+                mark_char = self.opts.ui.mark_char or mark_char
+                mark_hl = self.opts.ui.mark_hl or mark_hl
+            end
+
             api.nvim_buf_set_extmark(self.results_buf, self.ns_id, line_idx, 0, {
-                sign_text = "●",
-                sign_hl_group = "String",
+                sign_text = mark_char,
+                sign_hl_group = mark_hl,
                 priority = 105,
             })
         end
@@ -165,11 +187,15 @@ function UI:render(matches, selected_index, marked)
     local relative_selected_idx = selected_index - start_idx + 1
     if relative_selected_idx > 0 and relative_selected_idx <= #visible_matches then
         local selected_text = visible_matches[relative_selected_idx]
+        local selection_hl = "Visual"
+        if self.opts.ui and self.opts.ui.highlights and self.opts.ui.highlights.selection then
+            selection_hl = self.opts.ui.highlights.selection
+        end
 
         api.nvim_buf_set_extmark(self.results_buf, self.ns_id, relative_selected_idx - 1, 0, {
             end_row = relative_selected_idx - 1,
             end_col = #selected_text,
-            hl_group = "Visual",
+            hl_group = selection_hl,
             priority = 100,
         })
         pcall(api.nvim_win_set_cursor, self.results_win, { relative_selected_idx, 0 })

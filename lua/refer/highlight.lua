@@ -53,12 +53,18 @@ end
 ---@param line_idx number Line index (0-indexed)
 ---@param line string Line content
 ---@param highlight_code boolean Whether to highlight code content
-function M.highlight_entry(buf, ns, line_idx, line, highlight_code)
+---@param opts table|nil Configuration options
+function M.highlight_entry(buf, ns, line_idx, line, highlight_code, opts)
+    local header_hl = "WarningMsg"
+    if opts and opts.ui and opts.ui.highlights and opts.ui.highlights.header then
+        header_hl = opts.ui.highlights.header
+    end
+
     local bufnr = line:match "^(%d+): "
     if bufnr then
         safe_extmark(buf, ns, line_idx, 0, {
             end_col = #bufnr,
-            hl_group = "WarningMsg",
+            hl_group = header_hl,
             priority = 100,
         })
 

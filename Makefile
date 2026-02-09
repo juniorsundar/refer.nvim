@@ -4,7 +4,7 @@ TESTS_DIR=tests/
 .PHONY: test
 
 test:
-	@nvim \
+	@REFER_SKIP_DOWNLOAD=1 nvim \
 		--headless \
 		--noplugin \
 		-u ${TESTS_INIT} \

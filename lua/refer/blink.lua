@@ -70,6 +70,11 @@ local function ensure_binary()
         return false
     end
 
+    -- Skip download if requested (e.g. during tests)
+    if os.getenv "REFER_SKIP_DOWNLOAD" then
+        return false
+    end
+
     local lib_path = get_lib_path()
     if vim.uv.fs_stat(lib_path) then
         return false

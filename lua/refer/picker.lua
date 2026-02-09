@@ -31,8 +31,13 @@ local preview = require "refer.preview"
 ---@field selection_format? string Predefined format: "file", "grep", "lsp", "buffer"
 ---@field sorter? string|fun(items: table, query: string): table Custom sorter function or name
 ---@field available_sorters? table<string> List of sorter names (default: {"blink", "mini", "native", "lua"})
+---@field default_sorter? string Default sorter name (default: "blink")
 ---@field keymaps? table<string, string|fun(selection: string, builtin: BuiltinContext)> Keymap definitions
----@field percent? number Window height percentage (default: 0.4)
+---@field max_height_percent? number Window height percentage (default: 0.4)
+---@field max_height? number Maximum window height in lines
+---@field min_height? number Minimum window height in lines (default: 1)
+---@field debounce_ms? number Async debounce time in ms (default: 100)
+---@field min_query_len? number Async minimum query length (default: 2)
 
 ---@class Picker
 ---@field items_or_provider table|fun(query: string): table
@@ -98,8 +103,23 @@ function Picker.new(items_or_provider, opts)
     self.original_cursor = api.nvim_win_get_cursor(self.original_win)
 
     self.available_sorters = self.opts.available_sorters or { "blink", "mini", "native", "lua" }
+
+    local default_sorter = self.opts.default_sorter or "blink"
     self.sorter_idx = 1
+    for i, name in ipairs(self.available_sorters) do
+        if name == default_sorter then
+            self.sorter_idx = i
+            break
+        end
+    end
+
     self.custom_sorter = self.opts.sorter
+    if not self.custom_sorter then
+        local name = self.available_sorters[self.sorter_idx]
+        if name ~= "blink" then
+            self.custom_sorter = fuzzy.sorters[name]
+        end
+    end
 
     self.parser = self.opts.parser
     if not self.parser and self.opts.selection_format then
@@ -321,6 +341,7 @@ function Picker:update_preview()
                     lnum = data.lnum,
                     col = data.col,
                     target_win = self.original_win,
+                    max_lines = self.opts.preview and self.opts.preview.max_lines,
                 }
                 self.is_previewing = false
             end
@@ -549,21 +570,7 @@ end
 
 ---Setup keymaps for the picker
 function Picker:setup_keymaps()
-    local default_keymaps = {
-        ["<Tab>"] = "complete_selection",
-        ["<C-n>"] = "next_item",
-        ["<C-p>"] = "prev_item",
-        ["<Down>"] = "next_item",
-        ["<Up>"] = "prev_item",
-        ["<CR>"] = "select_input",
-        ["<Esc>"] = "close",
-        ["<C-c>"] = "close",
-        ["<C-g>"] = "send_to_grep",
-        ["<C-q>"] = "send_to_qf",
-        ["<C-s>"] = "cycle_sorter",
-    }
-
-    local keymaps = vim.tbl_extend("force", default_keymaps, self.opts.keymaps or {})
+    local keymaps = self.opts.keymaps or {}
 
     ---@param key string Key to map
     ---@param func function Callback function

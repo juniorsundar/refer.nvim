@@ -12,6 +12,7 @@ local preview_buf = nil
 ---@field lnum? number Line number to jump to (1-indexed)
 ---@field col? number Column number to jump to (1-indexed)
 ---@field target_win number Window handle to show preview in
+---@field max_lines? number Maximum lines to read (default: 1000)
 
 ---Show preview in the target window
 ---@param opts PreviewOpts Preview options
@@ -20,6 +21,7 @@ function M.show(opts)
     local lnum = opts.lnum or 1
     local col = opts.col or 1
     local target_win = opts.target_win
+    local max_lines = opts.max_lines or 1000
 
     if not api.nvim_win_is_valid(target_win) then
         return
@@ -50,7 +52,7 @@ function M.show(opts)
             else
                 local lines = {}
                 if vim.fn.filereadable(filename) == 1 then
-                    lines = vim.fn.readfile(filename, "", 1000)
+                    lines = vim.fn.readfile(filename, "", max_lines)
                 end
 
                 for i, line in ipairs(lines) do
