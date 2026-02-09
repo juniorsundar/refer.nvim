@@ -31,6 +31,7 @@ local default_opts = {
         },
     },
     preview = {
+        enabled = true,
         max_lines = 1000,
     },
     keymaps = {
@@ -45,6 +46,7 @@ local default_opts = {
         ["<C-g>"] = "send_to_grep",
         ["<C-q>"] = "send_to_qf",
         ["<C-s>"] = "cycle_sorter",
+        ["<C-v>"] = "toggle_preview",
     },
 }
 

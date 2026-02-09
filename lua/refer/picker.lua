@@ -55,6 +55,7 @@ local preview = require "refer.preview"
 ---@field marked table<string, boolean>
 ---@field selected_index number
 ---@field is_previewing boolean
+---@field preview_enabled boolean
 ---@field debounce_timer uv.uv_timer_t|nil
 ---@field preview_timer uv.uv_timer_t|nil
 ---@field ui ReferUI
@@ -139,6 +140,7 @@ function Picker.new(items_or_provider, opts)
     self.marked = {}
     self.selected_index = 1
     self.is_previewing = false
+    self.preview_enabled = self.opts.preview and self.opts.preview.enabled ~= false
     self.debounce_timer = nil
     self.preview_timer = nil
 
@@ -304,7 +306,7 @@ end
 
 ---Update preview window with current selection
 function Picker:update_preview()
-    if #self.current_matches == 0 then
+    if not self.preview_enabled or #self.current_matches == 0 then
         return
     end
 
@@ -555,6 +557,21 @@ function Picker:setup_actions()
 
         vim.notify("Sorter switched to: " .. name, vim.log.levels.INFO)
         self:refresh()
+    end
+
+    self.actions.toggle_preview = function()
+        self.preview_enabled = not self.preview_enabled
+        if self.preview_enabled then
+            self:update_preview()
+            vim.notify("Preview enabled", vim.log.levels.INFO)
+        else
+            -- Restore original buffer
+            if api.nvim_win_is_valid(self.original_win) and api.nvim_buf_is_valid(self.original_buf) then
+                api.nvim_win_set_buf(self.original_win, self.original_buf)
+                api.nvim_win_set_cursor(self.original_win, self.original_cursor)
+            end
+            vim.notify("Preview disabled", vim.log.levels.INFO)
+        end
     end
 end
 
