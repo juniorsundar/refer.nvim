@@ -1,0 +1,1 @@
+vim.b.completion = false
