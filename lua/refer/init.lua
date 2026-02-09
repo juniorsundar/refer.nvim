@@ -28,4 +28,20 @@ function M.pick(items_or_provider, on_select, opts)
     return picker
 end
 
+---Open an async picker with command generator
+---@param command_generator fun(query: string): table|nil Function that returns command args based on query
+---@param on_select fun(selection: string, data: SelectionData|nil)|nil Callback when item is selected
+---@param opts ReferOptions|nil Options to override defaults
+---@return Picker picker The picker instance
+function M.pick_async(command_generator, on_select, opts)
+    opts = vim.tbl_deep_extend("force", default_opts, opts or {})
+    if on_select then
+        opts.on_select = on_select
+    end
+
+    local picker = Picker.new_async(command_generator, opts)
+    picker:show()
+    return picker
+end
+
 return M

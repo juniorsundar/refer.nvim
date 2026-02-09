@@ -129,6 +129,99 @@ function Picker.new(items_or_provider, opts)
     return self
 end
 
+---Create a new async Picker instance
+---@param command_generator fun(query: string): table|nil Returns the command to run
+---@param opts ReferOptions|nil Configuration options
+---@return Picker picker New picker instance
+function Picker.new_async(command_generator, opts)
+    opts = opts or {}
+    local original_on_close = opts.on_close
+    local debounce_ms = opts.debounce_ms or 100
+    local min_query_len = opts.min_query_len or 2
+    local post_process = opts.post_process
+
+    local current_job = nil
+    local async_timer = nil
+
+    local function cleanup()
+        if current_job then
+            current_job:kill(15)
+            current_job = nil
+        end
+        if async_timer then
+            async_timer:stop()
+            async_timer:close()
+            async_timer = nil
+        end
+    end
+
+    opts.on_close = function()
+        cleanup()
+        if original_on_close then
+            original_on_close()
+        end
+    end
+
+    opts.on_change = function(query, update_ui_callback)
+        cleanup()
+
+        if not query or #query < min_query_len then
+            update_ui_callback {}
+            return
+        end
+
+        async_timer = vim.uv.new_timer()
+        if not async_timer then
+            return
+        end
+
+        async_timer:start(
+            debounce_ms,
+            0,
+            vim.schedule_wrap(function()
+                async_timer:close()
+                async_timer = nil
+
+                local cmd = command_generator(query)
+                if not cmd then
+                    update_ui_callback {}
+                    return
+                end
+
+                local output_lines = {}
+                local this_job
+
+                this_job = vim.system(cmd, {
+                    text = true,
+                    stdout = function(_, data)
+                        if data then
+                            local lines = vim.split(data, "\n", { trimempty = true })
+                            for _, line in ipairs(lines) do
+                                table.insert(output_lines, line)
+                            end
+
+                            vim.schedule(function()
+                                if current_job ~= this_job then
+                                    return
+                                end
+
+                                local matches = output_lines
+                                if post_process then
+                                    matches = post_process(output_lines, query)
+                                end
+                                update_ui_callback(matches)
+                            end)
+                        end
+                    end,
+                })
+                current_job = this_job
+            end)
+        )
+    end
+
+    return Picker.new({}, opts)
+end
+
 ---Show the picker UI
 function Picker:show()
     local input_buf, _ = self.ui:create_windows()
@@ -252,7 +345,7 @@ function Picker:refresh()
     local input = api.nvim_get_current_line()
 
     self.debounce_timer:start(
-        20, -- 20ms debounce for filtering
+        20,
         0,
         vim.schedule_wrap(function()
             if self.debounce_timer then
