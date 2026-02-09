@@ -1,0 +1,193 @@
+*refer.nvim.txt*       For Neovim >= 0.10.0      Last change: 2026 February 09
+
+==============================================================================
+Table of Contents                               *refer.nvim-table-of-contents*
+
+  - Features                                             |refer.nvim-features|
+  - Requirements                                     |refer.nvim-requirements|
+  - Installation                                     |refer.nvim-installation|
+  - Configuration                                   |refer.nvim-configuration|
+  - Pickers                                               |refer.nvim-pickers|
+  - Keymaps                                               |refer.nvim-keymaps|
+
+`refer.nvim` is a minimalist fuzzy picker for Neovim. It leverages the speed of
+the Blink <https://github.com/Saghen/blink.cmp> Rust-based fuzzy matching
+engine (automatically downloaded) while providing a robust Lua fallback.
+
+It is designed to be: - **Fast:** Uses Rust for heavy fuzzy matching on static
+lists. - **Responsive:** Uses asynchronous jobs for file searching (`fd`) and
+live grepping (`rg`). - **Clean:** Minimalist UI with floating windows and
+customizable highlights. - **Native:** Follows Neovim’s standard logic and
+Lua APIs.
+
+
+FEATURES                                                 *refer.nvim-features*
+
+- **Sorters:**
+    - **Blink:** Rust-based, extremely fast (Default for static lists).
+    - **Lua:** Pure Lua fallback (Default for async file lists).
+    - **Native:** Vim’s `matchfuzzy`.
+    - **Mini:** Support for `mini.fuzzy` if installed.
+- **Preview:**
+    - Integrated file preview with syntax highlighting.
+    - Toggleable with `<C-v>`.
+    - Configurable size limits for performance.
+
+
+REQUIREMENTS                                         *refer.nvim-requirements*
+
+- **Neovim 0.10+**
+- **curl** (Required to download the pre-built Blink fuzzy matcher binary).
+- **fd** (Required for the `Files` picker).
+- **ripgrep** (Required for the `Grep` picker).
+
+
+INSTALLATION                                         *refer.nvim-installation*
+
+Using lazy.nvim <https://github.com/folke/lazy.nvim>:
+
+>lua
+    {
+        "juniorsundar/refer.nvim",
+        dependencies = {
+            -- Optional: specific fuzzy libs if you want to override defaults
+            -- "echasnovski/mini.fuzzy", 
+        },
+        config = function()
+            require("refer").setup({
+                -- Your configuration here (see below)
+            })
+        end
+    }
+<
+
+
+CONFIGURATION                                       *refer.nvim-configuration*
+
+`refer.nvim` autoloads out of the box, but you can further customise it using
+`setup()`.
+
+>lua
+    require("refer").setup({
+        -- General Settings
+        max_height_percent = 0.4,-- Window height as a percentage of editor height
+        min_height = 1,         -- Minimum window height in lines
+        
+        -- Async Settings
+        debounce_ms = 100,      -- Delay for async searching (files/grep)
+        min_query_len = 2,      -- Minimum characters to start async search
+    
+        -- Sorting
+        available_sorters = { "blink", "mini", "native", "lua" },
+        default_sorter = "blink", -- Default sorter for static lists
+    
+        -- Preview Settings
+        preview = {
+            enabled = true,     -- Enable/Disable preview by default
+            max_lines = 1000,   -- Max lines to read for preview (performance)
+        },
+    
+        -- UI Customization
+        ui = {
+            mark_char = "●",
+            mark_hl = "String",
+            winhighlight = "Normal:Normal,FloatBorder:Normal,WinSeparator:Normal,StatusLine:Normal,StatusLineNC:Normal",
+            highlights = {
+                prompt = "Title",
+                selection = "Visual",
+                header = "WarningMsg", -- For grep/LSP file headers
+            },
+        },
+    
+        -- Provider Configuration
+        providers = {
+            files = {
+                -- Custom ignored directories for 'Files' picker
+                ignored_dirs = { ".git", ".jj", "node_modules", ".cache" },
+                -- Custom fd command
+                find_command = { "fd", "-H", "--type", "f", "--color", "never" },
+            },
+            grep = {
+                -- Custom rg command
+                grep_command = { "rg", "--vimgrep", "--smart-case" },
+            },
+        },
+    
+        -- Default Keymaps
+        keymaps = {
+            ["<Tab>"] = "complete_selection",
+            ["<C-n>"] = "next_item",
+            ["<C-p>"] = "prev_item",
+            ["<Down>"] = "next_item",
+            ["<Up>"] = "prev_item",
+            ["<CR>"] = "select_input",        -- If no item selected, returns input
+            ["<Esc>"] = "close",
+            ["<C-c>"] = "close",
+            ["<C-g>"] = "send_to_grep",       -- Send to grep (Quickfix-like buffer)
+            ["<C-q>"] = "send_to_qf",         -- Send to Quickfix list
+            ["<C-s>"] = "cycle_sorter",       -- Cycle available sorters
+            ["<C-v>"] = "toggle_preview",     -- Toggle preview window
+            -- Specific to Buffers picker:
+            -- ["<C-x>"] = "delete_buffer",
+        },
+    })
+<
+
+
+PICKERS                                                   *refer.nvim-pickers*
+
+`refer.nvim` exposes a user command `:Refer` with subcommands for each picker.
+
+
+STANDARD PICKERS ~
+
+- **:Refer Commands**: Search command history (Works almost like Emacs’ `M-x`.
+    - Intelligent cycling: `<C-p>`/`<C-n>` cycles through history entries that match your current input prefix.
+- **:Refer Files**: Search files using `fd`. (Async)
+- **:Refer Grep**: Live grep using `ripgrep`. (Async)
+- **:Refer Buffers**: List open buffers.
+- **:Refer OldFiles**: List recently opened files.
+
+
+LSP PICKERS ~
+
+- **:Refer References**: LSP references for the symbol under cursor.
+- **:Refer Definitions**: LSP definitions for the symbol under cursor.
+
+
+KEYMAPS                                                   *refer.nvim-keymaps*
+
+Inside the picker window:
+
+  -----------------------------------------------------------------------
+  Key                                 Action
+  ----------------------------------- -----------------------------------
+  <Tab>                               Complete Selection: Auto-completes
+                                      the input with the common prefix of
+                                      the selected item.
+
+  <CR>                                Select Entry: Confirm selection.
+
+  <C-n> / <Down>                      Next Item.
+
+  <C-p> / <Up>                        Previous Item.
+
+  <C-v>                               Toggle Preview: Show/hide file
+                                      preview.
+
+  <C-s>                               Cycle Sorter: Switch between blink,
+                                      native, lua, etc.
+
+  <C-q>                               Send to QF: Send marked (or all)
+                                      items to Quickfix list.
+
+  <C-g>                               Send to Grep: Send items to a
+                                      special “grep” buffer (editable).
+
+  <Tab> (Files)                       Toggle Mark: Mark multiple files
+                                      for QF/Grep actions.
+  -----------------------------------------------------------------------
+
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+
+vim:tw=78:ts=8:noet:ft=help:norl:
