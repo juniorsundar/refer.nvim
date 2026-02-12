@@ -1,4 +1,4 @@
-*refer.nvim.txt*       For Neovim >= 0.10.0      Last change: 2026 February 09
+*refer.nvim.txt*       For Neovim >= 0.10.0      Last change: 2026 February 12
 
 ==============================================================================
 Table of Contents                               *refer.nvim-table-of-contents*
@@ -7,6 +7,7 @@ Table of Contents                               *refer.nvim-table-of-contents*
   - Requirements                                     |refer.nvim-requirements|
   - Installation                                     |refer.nvim-installation|
   - Configuration                                   |refer.nvim-configuration|
+  - UI Select                                           |refer.nvim-ui-select|
   - Pickers                                               |refer.nvim-pickers|
   - Keymaps                                               |refer.nvim-keymaps|
 
@@ -51,7 +52,7 @@ Using lazy.nvim <https://github.com/folke/lazy.nvim>:
         "juniorsundar/refer.nvim",
         dependencies = {
             -- Optional: specific fuzzy libs if you want to override defaults
-            -- "echasnovski/mini.fuzzy", 
+            -- "nvim-mini/mini.fuzzy", 
         },
         config = function()
             require("refer").setup({
@@ -79,7 +80,9 @@ CONFIGURATION                                       *refer.nvim-configuration*
     
         -- Sorting
         available_sorters = { "blink", "mini", "native", "lua" },
-        default_sorter = "blink", -- Default sorter for static lists
+        default_sorter = "blink", -- Default sorter for static lists.
+                                  -- If blink.cmp isn't installed, it will download
+                                  -- the compiled library using `curl`.
     
         -- Preview Settings
         preview = {
@@ -134,6 +137,16 @@ CONFIGURATION                                       *refer.nvim-configuration*
 <
 
 
+UI SELECT                                               *refer.nvim-ui-select*
+
+You can replace the default `vim.ui.select` (used by code actions, etc.) with
+`refer.nvim`:
+
+>lua
+    require("refer").setup_ui_select()
+<
+
+
 PICKERS                                                   *refer.nvim-pickers*
 
 `refer.nvim` exposes a user command `:Refer` with subcommands for each picker.
@@ -141,8 +154,8 @@ PICKERS                                                   *refer.nvim-pickers*
 
 STANDARD PICKERS ~
 
-- **:Refer Commands**: Search command history (Works almost like Emacs’ `M-x`.
-    - Intelligent cycling: `<C-p>`/`<C-n>` cycles through history entries that match your current input prefix.
+- **:Refer Commands**: Works almost like Emacs’ `M-x` but for Vim. Execute commands interactively.
+    - History cycling: `<C-p>`/`<C-n>` cycles through history entries that match your current input prefix.
 - **:Refer Files**: Search files using `fd`. (Async)
 - **:Refer Grep**: Live grep using `ripgrep`. (Async)
 - **:Refer Buffers**: List open buffers.
