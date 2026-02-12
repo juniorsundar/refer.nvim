@@ -5,7 +5,7 @@ local M = {}
 
 -- Detect fd command (handle fdfind on Ubuntu/Debian)
 local fd_cmd = "fd"
-if vim.fn.executable("fdfind") == 1 then
+if vim.fn.executable "fdfind" == 1 then
     fd_cmd = "fdfind"
 end
 
