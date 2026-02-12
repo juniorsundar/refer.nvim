@@ -7,6 +7,9 @@
 
 </div>
 
+> [!IMPORTANT]
+> Need to add Screenshots and GIFs
+
 `refer.nvim` is a minimalist picker for Neovim.
 
 It is designed to:
@@ -147,6 +150,53 @@ require("refer").setup({
         },
     }
 })
+```
+
+### Creating Custom Pickers
+**Static List Picker:**
+
+```lua
+local refer = require("refer")
+
+refer.pick(
+    { "Option A", "Option B", "Option C" },
+    function(item)
+        print("You picked: " .. item)
+    end,
+    {
+        prompt = "Pick one > ",
+        -- Custom keymaps for this picker
+        keymaps = {
+            ["<C-d>"] = function(selection, builtin)
+                print("Deleted: " .. selection)
+                builtin.actions.close()
+            end
+        }
+    }
+)
+```
+
+**Async Command Picker:**
+Create a picker that runs a shell command based on your query (e.g., `locate`).
+
+```lua
+local refer = require("refer")
+
+refer.pick_async(
+    function(query)
+        -- Return the command to run as a table of strings
+        -- Return nil to stop/wait (e.g. if query is too short)
+        if #query < 3 then return nil end
+        return { "locate", query }
+    end,
+    function(selection)
+        vim.cmd("edit " .. selection)
+    end,
+    {
+        prompt = "Locate > ",
+        debounce_ms = 200,
+    }
+)
 ```
 
 ## Configuration Reference
