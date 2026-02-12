@@ -41,7 +41,10 @@ local schemas = {
 ---@param schema Schema The schema definition
 function M.register_parser(name, schema)
     if not name or type(schema) ~= "table" then
-        vim.notify("Refer: Invalid parser registration. Name must be string and schema must be table.", vim.log.levels.ERROR)
+        vim.notify(
+            "Refer: Invalid parser registration. Name must be string and schema must be table.",
+            vim.log.levels.ERROR
+        )
         return
     end
     if not schema.pattern or not schema.keys then
