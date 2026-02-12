@@ -125,6 +125,14 @@ require("refer").setup({
 })
 ```
 
+## UI Select
+
+You can replace the default `vim.ui.select` (used by code actions, etc.) with `refer.nvim`:
+
+```lua
+require("refer").setup_ui_select()
+```
+
 ## Pickers
 
 `refer.nvim` exposes a user command `:Refer` with subcommands for each picker.

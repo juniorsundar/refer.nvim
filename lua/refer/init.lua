@@ -88,4 +88,73 @@ function M.pick_async(command_generator, on_select, opts)
     return picker
 end
 
+---Use refer as the UI for vim.ui.select
+---@param items table Arbitrary items
+---@param opts table|nil Options (prompt, format_item, etc.)
+---@param on_choice fun(item: any|nil, idx: number|nil) Callback
+function M.select(items, opts, on_choice)
+    vim.validate {
+        items = { items, "t", false },
+        on_choice = { on_choice, "f", false },
+    }
+    opts = opts or {}
+
+    local choices = {}
+    local lookup = {}
+
+    local format_item = opts.format_item or tostring
+
+    for i, item in ipairs(items) do
+        local text = format_item(item)
+        
+        local unique_text = text
+        if lookup[unique_text] then
+            local count = 1
+            while lookup[unique_text .. " (" .. count .. ")"] do
+                count = count + 1
+            end
+            unique_text = unique_text .. " (" .. count .. ")"
+        end
+
+        table.insert(choices, unique_text)
+        lookup[unique_text] = { item = item, idx = i }
+    end
+
+    local selected = false
+
+    local function on_select(selection)
+        local data = lookup[selection]
+        if data then
+            on_choice(data.item, data.idx)
+        end
+    end
+
+    local function on_close()
+        if not selected then
+            on_choice(nil, nil)
+        end
+    end
+
+    local picker_opts = {
+        prompt = opts.prompt or "Select: ",
+        on_select = on_select,
+        on_close = on_close,
+        keymaps = {
+            ["<CR>"] = function(_, builtin)
+                local selection = builtin.picker.current_matches[builtin.picker.selected_index]
+                if selection then
+                    selected = true
+                    builtin.actions.select_entry()
+                end
+            end,
+        },
+    }
+
+    M.pick(choices, nil, picker_opts)
+end
+
+function M.setup_ui_select()
+    vim.ui.select = M.select
+end
+
 return M
