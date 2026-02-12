@@ -212,8 +212,9 @@ Inside the picker window:
   <C-q>                               Send to QF: Send marked (or all)
                                       items to Quickfix list.
 
-  <C-g>                               Send to Grep: Send items to a
-                                      special “grep” buffer (editable).
+  <C-g>                               Send to Grep: EXPERIMENTAL: Send
+                                      items to a special “grep” buffer
+                                      (editable).
 
   <Tab> (Files)                       Toggle Mark: Mark multiple files
                                       for QF/Grep actions.
