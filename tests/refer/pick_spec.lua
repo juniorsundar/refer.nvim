@@ -24,13 +24,17 @@ describe("refer.pick", function()
 
         picker = refer.pick(items, on_select)
 
-        -- Initial state (debounce wait)
-        vim.wait(50)
+        vim.wait(500, function()
+            return #picker.current_matches == 3
+        end)
 
         assert.are.same(#items, #picker.current_matches)
 
         set_input(picker, "app")
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 1
+        end)
 
         assert.are.same(1, #picker.current_matches)
         assert.are.same("apple", picker.current_matches[1])
@@ -53,13 +57,19 @@ describe("refer.pick", function()
         picker = refer.pick(provider, function(item)
             selected_item = item
         end)
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 2
+        end)
 
         -- Default query ""
         assert.are.same(2, #picker.current_matches)
 
         set_input(picker, "foo")
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 1 and picker.current_matches[1] == "foobar"
+        end)
 
         assert.are.same(1, #picker.current_matches)
         assert.are.same("foobar", picker.current_matches[1])
@@ -71,7 +81,10 @@ describe("refer.pick", function()
     it("can cycle through items", function()
         local items = { "a", "b", "c" }
         picker = refer.pick(items, function() end)
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 3
+        end)
 
         assert.are.same(1, picker.selected_index)
 
@@ -92,7 +105,10 @@ describe("refer.pick", function()
         local items = { "one" }
         local prompt = "Test Prompt > "
         picker = refer.pick(items, function() end, { prompt = prompt })
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 1
+        end)
 
         assert.are.same(prompt, picker.ui.base_prompt)
     end)
@@ -109,7 +125,10 @@ describe("refer.pick", function()
         end
 
         picker = refer.pick(items, on_select, { parser = parser })
-        vim.wait(50)
+
+        vim.wait(500, function()
+            return #picker.current_matches == 2
+        end)
 
         picker.actions.select_entry()
 
@@ -123,6 +142,10 @@ describe("refer.pick", function()
                 closed = true
             end,
         })
+        vim.wait(500, function()
+            return picker.input_buf ~= nil
+        end)
+
         vim.wait(50)
 
         picker:close()

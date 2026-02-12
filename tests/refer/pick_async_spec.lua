@@ -24,7 +24,9 @@ describe("refer.pick_async", function()
 
         set_input(picker, "foo")
 
-        vim.wait(100)
+        vim.wait(500, function()
+            return #picker.current_matches > 0
+        end)
 
         assert.are.same(1, #picker.current_matches)
         assert.are.same("result_foo", picker.current_matches[1])
@@ -38,7 +40,10 @@ describe("refer.pick_async", function()
         picker = refer.pick_async(generator, nil, { debounce_ms = 10, min_query_len = 1 })
 
         set_input(picker, "x")
-        vim.wait(100)
+
+        vim.wait(500, function()
+            return #picker.current_matches >= 2
+        end)
 
         assert.are.same(2, #picker.current_matches)
         assert.are.same("A", picker.current_matches[1])
@@ -61,7 +66,10 @@ describe("refer.pick_async", function()
         })
 
         set_input(picker, "baz")
-        vim.wait(100)
+
+        vim.wait(500, function()
+            return #picker.current_matches >= 2
+        end)
 
         assert.are.same(2, #picker.current_matches)
         assert.are.same("foo", picker.current_matches[1])
@@ -78,13 +86,16 @@ describe("refer.pick_async", function()
         picker = refer.pick_async(generator, nil, { debounce_ms = 10, min_query_len = 3 })
 
         set_input(picker, "ab") -- Length 2, should not trigger
-        vim.wait(50)
+        vim.wait(100)
 
         assert.is_false(called)
         assert.are.same(0, #picker.current_matches)
 
         set_input(picker, "abc") -- Length 3, should trigger
-        vim.wait(100)
+
+        vim.wait(500, function()
+            return called and #picker.current_matches > 0
+        end)
 
         assert.is_true(called)
         assert.are.same(1, #picker.current_matches)
