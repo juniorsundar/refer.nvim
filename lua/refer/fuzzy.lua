@@ -144,6 +144,17 @@ M.sorters = {
     end,
 }
 
+---Register a custom sorter function
+---@param name string Name of the sorter
+---@param sorter_fn ReferSorterFn The sorter function
+function M.register_sorter(name, sorter_fn)
+    if type(name) ~= "string" or type(sorter_fn) ~= "function" then
+        vim.notify("Refer: Invalid sorter registration. Name must be string and sorter must be function.", vim.log.levels.ERROR)
+        return
+    end
+    M.sorters[name] = sorter_fn
+end
+
 ---Register items with Blink's Rust engine if available
 ---@param items table List of strings
 ---@return boolean success Whether registration succeeded

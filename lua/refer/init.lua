@@ -53,7 +53,14 @@ local default_opts = {
 ---Configure default options for all pickers
 ---@param opts ReferOptions|nil Configuration options
 function M.setup(opts)
-    default_opts = vim.tbl_deep_extend("force", default_opts, opts or {})
+    opts = opts or {}
+    if opts.custom_sorters then
+        local fuzzy = require "refer.fuzzy"
+        for name, fn in pairs(opts.custom_sorters) do
+            fuzzy.register_sorter(name, fn)
+        end
+    end
+    default_opts = vim.tbl_deep_extend("force", default_opts, opts)
 end
 
 ---Open a picker with items or a provider function
@@ -106,7 +113,7 @@ function M.select(items, opts, on_choice)
 
     for i, item in ipairs(items) do
         local text = format_item(item)
-        
+
         local unique_text = text
         if lookup[unique_text] then
             local count = 1

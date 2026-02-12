@@ -42,7 +42,8 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 {
     "juniorsundar/refer.nvim",
     dependencies = {
-        -- Optional: specific fuzzy libs if you want to override defaults
+        -- Optional:
+        -- "saghen/blink.cmp", 
         -- "nvim-mini/mini.fuzzy", 
     },
     config = function()
@@ -72,6 +73,23 @@ require("refer").setup({
     default_sorter = "blink", -- Default sorter for static lists.
                               -- If blink.cmp isn't installed, it will download
                               -- the compiled library using `curl`.
+    
+    -- Custom Sorters (Bring Your Own Fuzzy)
+    -- Register your own sorting algorithms here.
+    custom_sorters = {
+        -- Example
+        my_prefix = function(items, query)
+            local matches = {}
+            for _, item in ipairs(items) do
+                if vim.startswith(item, query) then
+                    table.insert(matches, item)
+                end
+            end
+            return matches
+        end,
+    },
+    -- Don't forget to add your custom sorter to the available list if you want to cycle to it!
+    -- available_sorters = { "blink", "my_prefix", "lua" },
 
     -- Preview Settings
     preview = {
@@ -115,7 +133,7 @@ require("refer").setup({
         ["<CR>"] = "select_input",        -- If no item selected, returns input
         ["<Esc>"] = "close",
         ["<C-c>"] = "close",
-        ["<C-g>"] = "send_to_grep",       -- Send to grep (Quickfix-like buffer)
+        ["<C-g>"] = "send_to_grep",       -- EXPERIMENTAL: Send to grep (Quickfix-like buffer)
         ["<C-q>"] = "send_to_qf",         -- Send to Quickfix list
         ["<C-s>"] = "cycle_sorter",       -- Cycle available sorters
         ["<C-v>"] = "toggle_preview",     -- Toggle preview window
@@ -162,5 +180,5 @@ Inside the picker window:
 | `<C-v>` | **Toggle Preview:** Show/hide file preview. |
 | `<C-s>` | **Cycle Sorter:** Switch between blink, native, lua, etc. |
 | `<C-q>` | **Send to QF:** Send marked (or all) items to Quickfix list. |
-| `<C-g>` | **Send to Grep:** Send items to a special "grep" buffer (editable). |
+| `<C-g>` | **Send to Grep:** EXPERIMENTAL: Send items to a special "grep" buffer (editable). |
 | `<Tab>` (Files) | **Toggle Mark:** Mark multiple files for QF/Grep actions. |
