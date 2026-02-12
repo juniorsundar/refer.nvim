@@ -9,20 +9,24 @@ local fuzzy = require "refer.fuzzy"
 ---Files are loaded asynchronously after minimum query length is reached
 function M.files(opts)
     opts = opts or {}
-    local config = require("refer.init").pick_async({}, nil, opts).opts
+    local config = refer.get_opts(opts)
 
     return refer.pick_async(
         function(query)
+            local find_config = config.providers.files or {}
+
+            if type(find_config.find_command) == "function" then
+                return find_config.find_command(query)
+            end
+
             local ignored_dirs = { ".git", ".jj", "node_modules", ".cache" }
             local cmd = { "fd", "-H", "--type", "f", "--color", "never" }
 
-            if config.providers and config.providers.files then
-                if config.providers.files.ignored_dirs then
-                    ignored_dirs = config.providers.files.ignored_dirs
-                end
-                if config.providers.files.find_command then
-                    cmd = vim.deepcopy(config.providers.files.find_command)
-                end
+            if find_config.ignored_dirs then
+                ignored_dirs = find_config.ignored_dirs
+            end
+            if find_config.find_command then
+                cmd = vim.deepcopy(find_config.find_command)
             end
 
             for _, dir in ipairs(ignored_dirs) do
@@ -61,13 +65,20 @@ end
 ---Results update as you type
 function M.live_grep(opts)
     opts = opts or {}
-    local config = require("refer.init").pick_async({}, nil, opts).opts
+    local config = refer.get_opts(opts)
 
     return refer.pick_async(
         function(query)
+            local grep_config = config.providers.grep or {}
+
+            -- If user provided a function, delegate completely
+            if type(grep_config.grep_command) == "function" then
+                return grep_config.grep_command(query)
+            end
+
             local cmd = { "rg", "--vimgrep", "--smart-case" }
-            if config.providers and config.providers.grep and config.providers.grep.grep_command then
-                cmd = vim.deepcopy(config.providers.grep.grep_command)
+            if grep_config.grep_command then
+                cmd = vim.deepcopy(grep_config.grep_command)
             end
             table.insert(cmd, "--")
             table.insert(cmd, query)

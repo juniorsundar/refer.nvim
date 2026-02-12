@@ -29,6 +29,11 @@ local schemas = {
         keys = { "filename", "lnum", "col", "content" },
         types = { lnum = tonumber, col = tonumber },
     },
+    grep_no_col = {
+        pattern = "^(.-):(%d+):(.*)",
+        keys = { "filename", "lnum", "content" },
+        types = { lnum = tonumber },
+    },
     file = {
         pattern = "^(.*)",
         keys = { "filename" },
@@ -155,7 +160,11 @@ M.parsers = {
     ---@param selection string
     ---@return SelectionData|nil
     grep = function(selection)
-        return M.parse_selection(selection, "grep")
+        local res = M.parse_selection(selection, "grep")
+        if res then
+            return res
+        end
+        return M.parse_selection(selection, "grep_no_col")
     end,
 
     ---Parse LSP selection (filename:lnum:col)

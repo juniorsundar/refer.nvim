@@ -152,6 +152,37 @@ require("refer").setup({
 })
 ```
 
+### Customizing File Search (Using `find`)
+By default, `refer` uses `fd`. If you prefer standard `find`, you can provide a custom command generator function.
+```lua
+require("refer").setup({
+    providers = {
+        files = {
+            -- Return the command as a table of strings
+            find_command = function(query)
+                return { "find", ".", "-type", "f", "-name", "*" .. query .. "*" }
+            end
+        }
+    }
+})
+```
+
+### Customizing Grep (Using `grep`)
+By default, `refer` uses `rg` (ripgrep). If you prefer standard `grep`, you can provide a custom command generator function.
+
+```lua
+require("refer").setup({
+    providers = {
+        grep = {
+            -- Return the command as a table of strings
+            grep_command = function(query)
+                return { "grep", "-rnI", query, "." }
+            end
+        }
+    }
+})
+```
+
 ### Creating Custom Pickers
 **Static List Picker:**
 

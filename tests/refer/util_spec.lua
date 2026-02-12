@@ -22,7 +22,18 @@ describe("refer.util", function()
                 col = 5,
                 content = "local x = 1",
             }
-            assert.are.same(expected, util.parse_selection(input, "grep"))
+            assert.are.same(expected, util.parsers.grep(input))
+        end)
+
+        it("parses grep format fallback (no column)", function()
+            local input = "src/main.lua:10:local x = 1"
+            local expected = {
+                filename = "src/main.lua",
+                lnum = 10,
+                col = 1, -- Defaulted to 1
+                content = "local x = 1",
+            }
+            assert.are.same(expected, util.parsers.grep(input))
         end)
 
         it("parses lsp format", function()

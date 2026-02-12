@@ -3,6 +3,12 @@ local Picker = require "refer.picker"
 ---@class ReferModule
 local M = {}
 
+-- Detect fd command (handle fdfind on Ubuntu/Debian)
+local fd_cmd = "fd"
+if vim.fn.executable("fdfind") == 1 then
+    fd_cmd = "fdfind"
+end
+
 ---@type ReferOptions
 local default_opts = {
     max_height_percent = 0.4,
@@ -24,7 +30,7 @@ local default_opts = {
     providers = {
         files = {
             ignored_dirs = { ".git", ".jj", "node_modules", ".cache" },
-            find_command = { "fd", "-H", "--type", "f", "--color", "never" },
+            find_command = { fd_cmd, "-H", "--type", "f", "--color", "never" },
         },
         grep = {
             grep_command = { "rg", "--vimgrep", "--smart-case" },
@@ -67,6 +73,13 @@ function M.setup(opts)
         end
     end
     default_opts = vim.tbl_deep_extend("force", default_opts, opts)
+end
+
+---Get combined options
+---@param opts ReferOptions|nil User overrides
+---@return ReferOptions options Merged options
+function M.get_opts(opts)
+    return vim.tbl_deep_extend("force", default_opts, opts or {})
 end
 
 ---Open a picker with items or a provider function
