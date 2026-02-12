@@ -36,6 +36,21 @@ local schemas = {
     },
 }
 
+---Register a custom parser schema
+---@param name string Name of the format
+---@param schema Schema The schema definition
+function M.register_parser(name, schema)
+    if not name or type(schema) ~= "table" then
+        vim.notify("Refer: Invalid parser registration. Name must be string and schema must be table.", vim.log.levels.ERROR)
+        return
+    end
+    if not schema.pattern or not schema.keys then
+        vim.notify("Refer: Invalid parser schema. Must contain 'pattern' and 'keys'.", vim.log.levels.ERROR)
+        return
+    end
+    schemas[name] = schema
+end
+
 ---Check if a file is binary
 ---@param path string File path
 ---@return boolean is_binary True if file contains null bytes

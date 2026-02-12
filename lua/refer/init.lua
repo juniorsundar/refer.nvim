@@ -60,6 +60,12 @@ function M.setup(opts)
             fuzzy.register_sorter(name, fn)
         end
     end
+    if opts.custom_parsers then
+        local util = require "refer.util"
+        for name, schema in pairs(opts.custom_parsers) do
+            util.register_parser(name, schema)
+        end
+    end
     default_opts = vim.tbl_deep_extend("force", default_opts, opts)
 end
 
