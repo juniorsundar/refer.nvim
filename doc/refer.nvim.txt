@@ -80,11 +80,7 @@ CONFIGURATION                                       *refer.nvim-configuration*
         min_query_len = 2,      -- Minimum characters to start async search
     
         -- Sorting
-        available_sorters = { "blink", "mini", "native", "lua" },
-        default_sorter = "blink", -- Default sorter for static lists.
-                                  -- If blink.cmp isn't installed, it will download
-                                  -- the compiled library using `curl`.
-        
+    
         -- Custom Sorters (Bring Your Own Fuzzy)
         -- Register your own sorting algorithms here.
         custom_sorters = {
@@ -101,6 +97,21 @@ CONFIGURATION                                       *refer.nvim-configuration*
         },
         -- Don't forget to add your custom sorter to the available list if you want to cycle to it!
         -- available_sorters = { "blink", "my_prefix", "lua" },
+        available_sorters = { "blink", "mini", "native", "lua" },
+        default_sorter = "blink", -- Default sorter for static lists.
+                                  -- If blink.cmp isn't installed, it will download
+                                  -- the compiled library using `curl`.
+    
+        -- Custom Parsers
+        -- Define how to extract filename, line number, and column from a selection string.
+        custom_parsers = {
+            -- Example: Parsing "file.lua [10, 5]"
+            my_format = {
+                pattern = "^(.-)%s+%[(%d+),%s+(%d+)%]", -- Lua pattern
+                keys = { "filename", "lnum", "col" },   -- Map capture groups to keys
+                types = { lnum = tonumber, col = tonumber }, -- Optional type conversion
+            },
+        },
     
         -- Preview Settings
         preview = {
