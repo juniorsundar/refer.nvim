@@ -85,15 +85,17 @@ COMMANDS                                                 *refer.nvim-commands*
 
 Use `:Refer <subcommand>` to launch pickers:
 
-  Command       Description
-  ------------- ----------------------------------------------
-  Files         Fuzzy find files using fd (Async)
-  Grep          Live grep using ripgrep (Async)
-  Buffers       Switch between open buffers
-  OldFiles      Browse recently opened files
-  Commands      Execute Vim commands interactively
-  References    List LSP references for symbol under cursor
-  Definitions   Go to LSP definition for symbol under cursor
+  Command           Description
+  ----------------- --------------------------------------------------
+  Files             Fuzzy find files using fd (Async)
+  Grep              Live grep using ripgrep (Async)
+  Buffers           Switch between open buffers
+  OldFiles          Browse recently opened files
+  Commands          Execute Vim commands interactively
+  References        List LSP references for symbol under cursor
+  Definitions       Go to LSP definition for symbol under cursor
+  Implementations   Go to LSP implementation for symbol under cursor
+  Declarations      Go to LSP declaration for symbol under cursor
 
 TUTORIALS & ADVANCED USAGE             *refer.nvim-tutorials-&-advanced-usage*
 
