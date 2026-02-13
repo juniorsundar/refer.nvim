@@ -91,7 +91,7 @@ function M.commands(opts)
     end, function(input_text)
         vim.fn.histadd("cmd", input_text)
         vim.cmd(input_text)
-    end, {
+    end, vim.tbl_deep_extend("force", {
         prompt = "M-x > ",
         default_text = default_text,
         keymaps = {
@@ -102,13 +102,13 @@ function M.commands(opts)
                 cycle_history(builtin, -1)
             end,
         },
-    })
+    }, opts or {}))
 end
 
 ---Open buffer picker
 ---Shows all listed buffers with bufnr, path, and cursor position
 ---Keymap <C-x> closes the selected buffer
-function M.buffers()
+function M.buffers(opts)
     local bufs = vim.api.nvim_list_bufs()
     local items = {}
 
@@ -130,7 +130,7 @@ function M.buffers()
         end
     end
 
-    return refer.pick(items, util.jump_to_location, {
+    return refer.pick(items, util.jump_to_location, vim.tbl_deep_extend("force", {
         prompt = "Buffers > ",
         keymaps = {
             ["<Tab>"] = "toggle_mark",
@@ -163,12 +163,12 @@ function M.buffers()
             end,
         },
         parser = util.parsers.buffer,
-    })
+    }, opts or {}))
 end
 
 ---Open recent files picker
 ---Shows files from v:oldfiles that are still readable
-function M.old_files()
+function M.old_files(opts)
     local results = {}
 
     for _, file in ipairs(vim.v.oldfiles) do
@@ -177,7 +177,7 @@ function M.old_files()
         end
     end
 
-    return refer.pick(results, nil, {
+    return refer.pick(results, nil, vim.tbl_deep_extend("force", {
         prompt = "Recent Files > ",
         keymaps = {
             ["<Tab>"] = "toggle_mark",
@@ -188,7 +188,7 @@ function M.old_files()
             util.jump_to_location(selection, data)
             pcall(vim.cmd, 'normal! g`"')
         end,
-    })
+    }, opts or {}))
 end
 
 return M

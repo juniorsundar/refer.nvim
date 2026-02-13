@@ -6,7 +6,7 @@ local util = require "refer.util"
 
 ---Find references to symbol under cursor using LSP
 ---Shows filename, line, column, and content for each reference
-function M.references()
+function M.references(opts)
     local clients = vim.lsp.get_clients { bufnr = 0 }
     local client = clients[1]
 
@@ -43,20 +43,20 @@ function M.references()
             table.insert(items, entry)
         end
 
-        refer.pick(items, util.jump_to_location, {
+        refer.pick(items, util.jump_to_location, vim.tbl_deep_extend("force", {
             prompt = "LSP References > ",
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "select_entry",
             },
             parser = util.parsers.lsp,
-        })
+        }, opts or {}))
     end)
 end
 
 ---Find definitions of symbol under cursor using LSP
 ---Shows filename, line, column, and content for each definition
-function M.definitions()
+function M.definitions(opts)
     local clients = vim.lsp.get_clients { bufnr = 0 }
     local client = clients[1]
 
@@ -100,14 +100,14 @@ function M.definitions()
             end
         end
 
-        refer.pick(items, util.jump_to_location, {
+        refer.pick(items, util.jump_to_location, vim.tbl_deep_extend("force", {
             prompt = "LSP Definitions > ",
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "select_entry",
             },
             parser = util.parsers.lsp,
-        })
+        }, opts or {}))
     end)
 end
 

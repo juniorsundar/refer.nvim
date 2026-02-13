@@ -570,6 +570,28 @@ function Picker:setup_actions()
         self:refresh()
     end
 
+    self.actions.scroll_preview_up = function()
+        if not self.preview_enabled then
+            return
+        end
+        if api.nvim_win_is_valid(self.original_win) then
+            api.nvim_win_call(self.original_win, function()
+                vim.cmd "normal! \21"
+            end)
+        end
+    end
+
+    self.actions.scroll_preview_down = function()
+        if not self.preview_enabled then
+            return
+        end
+        if api.nvim_win_is_valid(self.original_win) then
+            api.nvim_win_call(self.original_win, function()
+                vim.cmd "normal! \4"
+            end)
+        end
+    end
+
     self.actions.toggle_preview = function()
         self.preview_enabled = not self.preview_enabled
         if self.preview_enabled then

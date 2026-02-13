@@ -53,6 +53,8 @@ local default_opts = {
         ["<C-q>"] = "send_to_qf",
         ["<C-s>"] = "cycle_sorter",
         ["<C-v>"] = "toggle_preview",
+        ["<C-u>"] = "scroll_preview_up",
+        ["<C-d>"] = "scroll_preview_down",
     },
 }
 
