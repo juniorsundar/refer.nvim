@@ -70,39 +70,43 @@ function M.commands(opts)
         default_text = "'<,'>"
     end
 
-    return refer.pick(function(input)
-        if input == "" then
-            return vim.fn.getcompletion("", "command")
-        end
-        local matches = vim.fn.getcompletion(input, "cmdline")
-        local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
-        if prefix then
-            local new_matches = {}
-            for _, m in ipairs(matches) do
-                if not vim.startswith(m, prefix) then
-                    table.insert(new_matches, prefix .. m)
-                else
-                    table.insert(new_matches, m)
-                end
+    return refer.pick(
+        function(input)
+            if input == "" then
+                return vim.fn.getcompletion("", "command")
             end
-            return new_matches
-        end
-        return matches
-    end, function(input_text)
-        vim.fn.histadd("cmd", input_text)
-        vim.cmd(input_text)
-    end, vim.tbl_deep_extend("force", {
-        prompt = "M-x > ",
-        default_text = default_text,
-        keymaps = {
-            ["<C-p>"] = function(_, builtin)
-                cycle_history(builtin, 1)
-            end,
-            ["<C-n>"] = function(_, builtin)
-                cycle_history(builtin, -1)
-            end,
-        },
-    }, opts or {}))
+            local matches = vim.fn.getcompletion(input, "cmdline")
+            local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
+            if prefix then
+                local new_matches = {}
+                for _, m in ipairs(matches) do
+                    if not vim.startswith(m, prefix) then
+                        table.insert(new_matches, prefix .. m)
+                    else
+                        table.insert(new_matches, m)
+                    end
+                end
+                return new_matches
+            end
+            return matches
+        end,
+        function(input_text)
+            vim.fn.histadd("cmd", input_text)
+            vim.cmd(input_text)
+        end,
+        vim.tbl_deep_extend("force", {
+            prompt = "M-x > ",
+            default_text = default_text,
+            keymaps = {
+                ["<C-p>"] = function(_, builtin)
+                    cycle_history(builtin, 1)
+                end,
+                ["<C-n>"] = function(_, builtin)
+                    cycle_history(builtin, -1)
+                end,
+            },
+        }, opts or {})
+    )
 end
 
 ---Open buffer picker
@@ -130,40 +134,44 @@ function M.buffers(opts)
         end
     end
 
-    return refer.pick(items, util.jump_to_location, vim.tbl_deep_extend("force", {
-        prompt = "Buffers > ",
-        keymaps = {
-            ["<Tab>"] = "toggle_mark",
-            ["<CR>"] = "select_entry",
-            ["<C-x>"] = function(selection, builtin)
-                local parser = util.parsers.buffer
-                local data = parser(selection)
-                if data and data.bufnr then
-                    local win = builtin.parameters.original_win
-                    if win and vim.api.nvim_win_is_valid(win) then
-                        local current_view_buf = vim.api.nvim_win_get_buf(win)
-                        if current_view_buf == data.bufnr then
-                            local scratch = vim.api.nvim_create_buf(false, true)
-                            vim.bo[scratch].bufhidden = "wipe"
-                            vim.api.nvim_win_set_buf(win, scratch)
+    return refer.pick(
+        items,
+        util.jump_to_location,
+        vim.tbl_deep_extend("force", {
+            prompt = "Buffers > ",
+            keymaps = {
+                ["<Tab>"] = "toggle_mark",
+                ["<CR>"] = "select_entry",
+                ["<C-x>"] = function(selection, builtin)
+                    local parser = util.parsers.buffer
+                    local data = parser(selection)
+                    if data and data.bufnr then
+                        local win = builtin.parameters.original_win
+                        if win and vim.api.nvim_win_is_valid(win) then
+                            local current_view_buf = vim.api.nvim_win_get_buf(win)
+                            if current_view_buf == data.bufnr then
+                                local scratch = vim.api.nvim_create_buf(false, true)
+                                vim.bo[scratch].bufhidden = "wipe"
+                                vim.api.nvim_win_set_buf(win, scratch)
+                            end
                         end
-                    end
 
-                    pcall(vim.api.nvim_buf_delete, data.bufnr, { force = true })
+                        pcall(vim.api.nvim_buf_delete, data.bufnr, { force = true })
 
-                    for i, item in ipairs(items) do
-                        if item == selection then
-                            table.remove(items, i)
-                            break
+                        for i, item in ipairs(items) do
+                            if item == selection then
+                                table.remove(items, i)
+                                break
+                            end
                         end
-                    end
 
-                    builtin.actions.refresh()
-                end
-            end,
-        },
-        parser = util.parsers.buffer,
-    }, opts or {}))
+                        builtin.actions.refresh()
+                    end
+                end,
+            },
+            parser = util.parsers.buffer,
+        }, opts or {})
+    )
 end
 
 ---Open recent files picker
@@ -177,18 +185,22 @@ function M.old_files(opts)
         end
     end
 
-    return refer.pick(results, nil, vim.tbl_deep_extend("force", {
-        prompt = "Recent Files > ",
-        keymaps = {
-            ["<Tab>"] = "toggle_mark",
-            ["<CR>"] = "select_entry",
-        },
-        parser = util.parsers.file,
-        on_select = function(selection, data)
-            util.jump_to_location(selection, data)
-            pcall(vim.cmd, 'normal! g`"')
-        end,
-    }, opts or {}))
+    return refer.pick(
+        results,
+        nil,
+        vim.tbl_deep_extend("force", {
+            prompt = "Recent Files > ",
+            keymaps = {
+                ["<Tab>"] = "toggle_mark",
+                ["<CR>"] = "select_entry",
+            },
+            parser = util.parsers.file,
+            on_select = function(selection, data)
+                util.jump_to_location(selection, data)
+                pcall(vim.cmd, 'normal! g`"')
+            end,
+        }, opts or {})
+    )
 end
 
 return M

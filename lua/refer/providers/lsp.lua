@@ -72,14 +72,18 @@ local function lsp_request(method, label, title, opts, param_modifier)
             return
         end
 
-        refer.pick(items, util.jump_to_location, vim.tbl_deep_extend("force", {
-            prompt = title .. " > ",
-            keymaps = {
-                ["<Tab>"] = "toggle_mark",
-                ["<CR>"] = "select_entry",
-            },
-            parser = util.parsers.lsp,
-        }, opts or {}))
+        refer.pick(
+            items,
+            util.jump_to_location,
+            vim.tbl_deep_extend("force", {
+                prompt = title .. " > ",
+                keymaps = {
+                    ["<Tab>"] = "toggle_mark",
+                    ["<CR>"] = "select_entry",
+                },
+                parser = util.parsers.lsp,
+            }, opts or {})
+        )
     end)
 end
 
