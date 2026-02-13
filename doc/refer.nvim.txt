@@ -145,6 +145,8 @@ You can customize key bindings inside the picker window.
 - `<C-n>`/`<Down>`: Next item
 - `<C-p>`/`<Up>`: Previous item
 - `<C-v>`: Toggle preview
+- `<C-u>`: Scroll preview up
+- `<C-d>`: Scroll preview down
 - `<C-s>`: Cycle sorters (blink -> lua -> native)
 - `<C-q>`: Send to Quickfix list
 - `<C-g>`: (EXPERIMENTAL - Requires a WIP plugin) Send to "Grep" buffer
