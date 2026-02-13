@@ -6,7 +6,7 @@ local util = require "refer.util"
 
 ---Open command picker (like M-x in Emacs)
 ---Shows all available vim commands with completion
-function M.commands()
+function M.commands(opts)
     local history_state = {
         index = 0,
         prefix = nil,
@@ -65,16 +65,35 @@ function M.commands()
         history_state.last_tick = vim.api.nvim_buf_get_changedtick(input_buf)
     end
 
+    local default_text = nil
+    if (opts and opts.range == 2) or vim.fn.mode():find "^[vV\22]" then
+        default_text = "'<,'>"
+    end
+
     return refer.pick(function(input)
         if input == "" then
             return vim.fn.getcompletion("", "command")
         end
-        return vim.fn.getcompletion(input, "cmdline")
+        local matches = vim.fn.getcompletion(input, "cmdline")
+        local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
+        if prefix then
+            local new_matches = {}
+            for _, m in ipairs(matches) do
+                if not vim.startswith(m, prefix) then
+                    table.insert(new_matches, prefix .. m)
+                else
+                    table.insert(new_matches, m)
+                end
+            end
+            return new_matches
+        end
+        return matches
     end, function(input_text)
         vim.fn.histadd("cmd", input_text)
         vim.cmd(input_text)
     end, {
         prompt = "M-x > ",
+        default_text = default_text,
         keymaps = {
             ["<C-p>"] = function(_, builtin)
                 cycle_history(builtin, 1)

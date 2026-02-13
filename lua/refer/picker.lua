@@ -40,6 +40,7 @@ local preview = require "refer.preview"
 ---@field min_height? number Minimum window height in lines (default: 1)
 ---@field debounce_ms? number Async debounce time in ms (default: 100)
 ---@field min_query_len? number Async minimum query length (default: 2)
+---@field default_text? string Initial text in the prompt
 
 ---@class Picker
 ---@field items_or_provider table|fun(query: string): table
@@ -251,13 +252,21 @@ function Picker:show()
     local input_buf, _ = self.ui:create_windows()
     self.input_buf = input_buf
 
+    if self.opts.default_text then
+        self.ui:update_input { self.opts.default_text }
+    end
+
     -- Setup actions and keymaps
     self:setup_actions()
     self:setup_keymaps()
     self:setup_autocmds()
 
     self:refresh()
-    vim.cmd "startinsert"
+    if self.opts.default_text then
+        vim.cmd "startinsert!"
+    else
+        vim.cmd "startinsert"
+    end
 end
 
 ---Close the picker and clean up resources

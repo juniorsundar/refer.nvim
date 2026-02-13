@@ -4,26 +4,26 @@ end
 vim.g.loaded_refer = 1
 
 local subcommands = {
-    Files = function()
-        require("refer.providers.files").files()
+    Files = function(opts)
+        require("refer.providers.files").files(opts)
     end,
-    Grep = function()
-        require("refer.providers.files").live_grep()
+    Grep = function(opts)
+        require("refer.providers.files").live_grep(opts)
     end,
-    Buffers = function()
-        require("refer.providers.builtin").buffers()
+    Buffers = function(opts)
+        require("refer.providers.builtin").buffers(opts)
     end,
-    OldFiles = function()
-        require("refer.providers.builtin").old_files()
+    OldFiles = function(opts)
+        require("refer.providers.builtin").old_files(opts)
     end,
-    Commands = function()
-        require("refer.providers.builtin").commands()
+    Commands = function(opts)
+        require("refer.providers.builtin").commands(opts)
     end,
-    References = function()
-        require("refer.providers.lsp").references()
+    References = function(opts)
+        require("refer.providers.lsp").references(opts)
     end,
-    Definitions = function()
-        require("refer.providers.lsp").definitions()
+    Definitions = function(opts)
+        require("refer.providers.lsp").definitions(opts)
     end,
 }
 
@@ -31,12 +31,13 @@ vim.api.nvim_create_user_command("Refer", function(opts)
     local subcommand_key = opts.fargs[1]
     local func = subcommands[subcommand_key]
     if func then
-        func()
+        func(opts)
     else
         vim.notify("Refer: Unknown subcommand: " .. subcommand_key, vim.log.levels.ERROR)
     end
 end, {
     nargs = 1,
+    range = true,
     complete = function(ArgLead, CmdLine, CursorPos)
         local keys = vim.tbl_keys(subcommands)
         table.sort(keys)
