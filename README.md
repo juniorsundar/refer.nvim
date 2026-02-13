@@ -13,23 +13,39 @@
 `refer.nvim` is a minimalist picker for Neovim.
 
 It is designed to:
-- **Be intuitive:** It shouldn't pull you out of your current context and meld in seamlessly with your workflow.
-- **Be clean:** Minimalist UI without floating windows and noise, a lot like Emacs minibuffers.
-- **Integrate:** With other plugins (use the fuzzy sorter used in your at-point completion in your selecter).
-- **Functionally hackable:** While there is limited flexibility in the picker's aesthetics, it is functionally hackable in every way.
+
+- **Be intuitive:** It shouldn't pull you out of your current context and meld in
+  seamlessly with your workflow.  
+- **Be clean:** Minimalist UI without floating windows and noise, a lot like
+  Emacs minibuffers.  
+- **Integrate:** With other plugins (use the fuzzy sorter used in your at-point
+  completion in your selecter).  
+- **Functionally hackable:** While there is limited flexibility in the picker's
+  aesthetics, it is functionally hackable in every way.  
 
 It is not designed to:
-- **Be "blazingly fast":** Speed is relative. This is, in essense, a picker plugin. I am not developing a super-fast fuzzy sorter.
+
+- **Be "blazingly fast":** Speed is relative. This is, in essense, a picker
+  plugin. I am not developing a super-fast fuzzy sorter.  
 
 ## Features
 
-This plugin only provides you with a picker. I am not spending any energy to develop an optimised fuzzy sorter. There are already implementations out there that you can use. This plugin provides you with the ability to register these fuzzy sorter implementations.
+This plugin only provides you with a picker. I am not spending any energy to
+develop an optimised fuzzy sorter. There are already implementations out there
+that you can use. This plugin provides you with the ability to register these
+fuzzy sorter implementations.
 
 There are already some sorters registered:
-- **Blink:** Rust-based, extremely fast (Default for static lists) (Requires `blink.cmp` installed. Or else it will download just the library from GitHub.).
-- **Native:** Vim's `matchfuzzy` (Vim is generous... `:h matchfuzzy()`.).
-- **Mini:** Support for `mini.fuzzy` if installed (This supports strings with spaces in them, unlike the above two options.).
-- **Lua:** Pure Lua fallback (Default for async file lists) (I kept this for posterity's sake. Its by no means the most optimal option. Also supports strings with spaces in them.).
+
+- **Blink:** Rust-based, extremely fast (Default for static lists) (Requires
+  `blink.cmp` installed. Or else it will download just the library from
+  GitHub.).  
+- **Native:** Vim's `matchfuzzy` (Vim is generous... `:h matchfuzzy()`.).  
+- **Mini:** Support for `mini.fuzzy` if installed (This supports strings with
+  spaces in them, unlike the above two options.).  
+- **Lua:** Pure Lua fallback (Default for async file lists) (I kept this for
+  posterity's sake. Its by no means the most optimal option. Also supports
+  strings with spaces in them.).  
 
 ## Requirements
 
@@ -87,7 +103,8 @@ Use `:Refer <subcommand>` to launch pickers:
   - [Enabling Previews for Custom Items](#enabling-previews-for-custom-items)
 
 ### Replacing `vim.ui.select`
-Use `refer` as the interface for `vim.ui.select` (used by code actions and plugins):
+Use `refer` as the interface for `vim.ui.select` (used by code actions and
+plugins):
 
 ```lua
 require("refer").setup_ui_select()
@@ -111,16 +128,18 @@ require("refer").setup({
 })
 ```
 
-**Default Keymaps:**
-- `<Tab>`: Complete selection (common prefix)
-- `<CR>`: Select entry
-- `<C-n>`/`<Down>`: Next item
-- `<C-p>`/`<Up>`: Previous item
-- `<C-v>`: Toggle preview
-- `<C-s>`: Cycle sorters (blink -> lua -> native)
-- `<C-q>`: Send to Quickfix list
-- `<C-g>`: (EXPERIMENTAL - Requires a WIP plugin) Send to "Grep" buffer (Editable results)
-- `<Esc>`/`<C-c>`: Close
+**Default Keymaps:**  
+
+- `<Tab>`: Complete selection (common prefix)  
+- `<CR>`: Select entry  
+- `<C-n>`/`<Down>`: Next item  
+- `<C-p>`/`<Up>`: Previous item  
+- `<C-v>`: Toggle preview  
+- `<C-s>`: Cycle sorters (blink -> lua -> native)  
+- `<C-q>`: Send to Quickfix list  
+- `<C-g>`: (EXPERIMENTAL - Requires a WIP plugin) Send to "Grep" buffer
+  (Editable results)  
+- `<Esc>`/`<C-c>`: Close  
 
 ### Bring Your Own Fuzzy (Custom Sorters)
 You can define custom sorting algorithms. For example, a simple prefix matcher:
@@ -144,7 +163,9 @@ require("refer").setup({
 ```
 
 ### Custom Parsers
-Teach `refer` how to parse specific text formats to enable file preview and navigation. This is useful if you are piping custom logs or tool output into `refer`.
+Teach `refer` how to parse specific text formats to enable file preview and
+navigation. This is useful if you are piping custom logs or tool output into
+`refer`.
 
 **Scenario:** You have input lines formatted like: `src/main.lua [Line 10, Col 5]`.
 
@@ -164,7 +185,9 @@ require("refer").setup({
 ```
 
 ### Customizing File Search (Using `find`)
-By default, `refer` uses `fd`. If you prefer standard `find`, you can provide a custom command generator function.
+By default, `refer` uses `fd`. If you prefer standard `find`, you can provide a
+custom command generator function.
+
 ```lua
 require("refer").setup({
     providers = {
@@ -179,7 +202,8 @@ require("refer").setup({
 ```
 
 ### Customizing Grep (Using `grep`)
-By default, `refer` uses `rg` (ripgrep). If you prefer standard `grep`, you can provide a custom command generator function.
+By default, `refer` uses `rg` (ripgrep). If you prefer standard `grep`, you can
+provide a custom command generator function.
 
 ```lua
 require("refer").setup({
@@ -242,7 +266,8 @@ refer.pick_async(
 ```
 
 #### Enabling Previews for Custom Items
-Create a picker with custom string formats and teach `refer` how to parse them so the built-in file previewer works.
+Create a picker with custom string formats and teach `refer` how to parse them
+so the built-in file previewer works.
 
 ```lua
 local refer = require("refer")
