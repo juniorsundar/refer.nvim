@@ -1,4 +1,4 @@
-*refer.nvim.txt*       For Neovim >= 0.10.0      Last change: 2026 February 12
+*refer.nvim.txt*       For Neovim >= 0.10.0      Last change: 2026 February 13
 
 ==============================================================================
 Table of Contents                               *refer.nvim-table-of-contents*
@@ -88,6 +88,17 @@ Use `:Refer <subcommand>` to launch pickers:
   Definitions   Go to LSP definition for symbol under cursor
 
 TUTORIALS & ADVANCED USAGE             *refer.nvim-tutorials-&-advanced-usage*
+
+- |refer.nvim-replacing-`vim.ui.select`|
+- |refer.nvim-custom-keymaps|
+- |refer.nvim-bring-your-own-fuzzy-(custom-sorters)|
+- |refer.nvim-custom-parsers|
+- |refer.nvim-customizing-file-search|
+- |refer.nvim-customizing-grep|
+- |refer.nvim-creating-custom-pickers|
+    - |refer.nvim-static-list-picker|
+    - |refer.nvim-async-command-picker|
+    - |refer.nvim-enabling-previews-for-custom-items|
 
 
 REPLACING VIM.UI.SELECT ~
@@ -214,7 +225,8 @@ provide a custom command generator function.
 
 CREATING CUSTOM PICKERS ~
 
-**Static List Picker:**
+
+STATIC LIST PICKER
 
 >lua
     local refer = require("refer")
@@ -237,8 +249,10 @@ CREATING CUSTOM PICKERS ~
     )
 <
 
-**Async Command Picker:** Create a picker that runs a shell command based on
-your query (e.g., `locate`).
+
+ASYNC COMMAND PICKER
+
+Create a picker that runs a shell command based on your query (e.g., `locate`).
 
 >lua
     local refer = require("refer")
@@ -256,6 +270,46 @@ your query (e.g., `locate`).
         {
             prompt = "Locate > ",
             debounce_ms = 200,
+        }
+    )
+<
+
+
+ENABLING PREVIEWS FOR CUSTOM ITEMS
+
+Create a picker with custom string formats and teach `refer` how to parse them
+so the built-in file previewer works.
+
+>lua
+    local refer = require("refer")
+    refer.pick(
+        {
+            -- Alternate format as col:lnum:filename
+            "10:5:lua/refer/picker.lua",
+            "20:1:README.md",
+        },
+        function(selection, data)
+            if data and data.filename then
+                vim.cmd("edit " .. data.filename)
+                vim.api.nvim_win_set_cursor(0, {data.lnum, data.col - 1})
+            end
+        end,
+        {
+            prompt = "Navigate > ",
+            preview = { enabled = true },
+            
+            -- Custom parser for "row:col:filename"
+            parser = function(selection)
+                local lnum, col, filename = selection:match("^(%d+):(%d+):(.+)$")
+                if filename then
+                    return {
+                        filename = filename,
+                        lnum = tonumber(lnum),
+                        col = tonumber(col)
+                    }
+                end
+                return nil
+            end
         }
     )
 <
