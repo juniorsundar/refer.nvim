@@ -20,8 +20,8 @@ local schemas = {
         types = { bufnr = tonumber, lnum = tonumber, col = tonumber },
     },
     lsp = {
-        pattern = "^(.-):(%d+):(%d+)",
-        keys = { "filename", "lnum", "col" },
+        pattern = { "^(.-):(%d+):(%d+):(.*)", "^(.-):(%d+):(%d+)" },
+        keys = { "filename", "lnum", "col", "content" },
         types = { lnum = tonumber, col = tonumber },
     },
     grep = {
@@ -81,7 +81,7 @@ function M.complete_line(input, selection)
         return selection
     end
 
-    local prefix = input:match("^(.*[%s%.%/:\\\\])" or "") or ""
+    local prefix = input:match "^(.*[%s%.%/:\\\\])" or ""
     return prefix .. selection
 end
 
@@ -140,14 +140,18 @@ function M.parse_selection(selection, format)
     return typed_result
 end
 
+local function make_parser(format)
+    return function(selection)
+        return M.parse_selection(selection, format)
+    end
+end
+
 ---@type table<string, fun(selection: string): SelectionData|nil> Predefined parsers
 M.parsers = {
     ---Parse file selection
     ---@param selection string
     ---@return SelectionData|nil
-    file = function(selection)
-        return M.parse_selection(selection, "file")
-    end,
+    file = make_parser "file",
 
     ---Parse grep selection (filename:lnum:col:content)
     ---@param selection string
@@ -163,16 +167,12 @@ M.parsers = {
     ---Parse LSP selection (filename:lnum:col)
     ---@param selection string
     ---@return SelectionData|nil
-    lsp = function(selection)
-        return M.parse_selection(selection, "lsp")
-    end,
+    lsp = make_parser "lsp",
 
     ---Parse buffer selection (bufnr: filename:lnum:col)
     ---@param selection string
     ---@return SelectionData|nil
-    buffer = function(selection)
-        return M.parse_selection(selection, "buffer")
-    end,
+    buffer = make_parser "buffer",
 }
 
 ---Jump to a location in a file

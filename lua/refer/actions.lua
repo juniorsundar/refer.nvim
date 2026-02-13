@@ -131,6 +131,20 @@ function M.get_defaults(picker)
                         if parsed.col then
                             item_data.col = parsed.col
                         end
+
+                        if parsed.content then
+                            item_data.text = parsed.content
+                        elseif parsed.filename and parsed.lnum then
+                            -- Fallback: try to strip the coordinate prefix from the text
+                            local prefix_col = string.format("%s:%d:%d:", parsed.filename, parsed.lnum, parsed.col or 0)
+                            local prefix_no_col = string.format("%s:%d:", parsed.filename, parsed.lnum)
+
+                            if vim.startswith(candidate, prefix_col) then
+                                item_data.text = candidate:sub(#prefix_col + 1)
+                            elseif vim.startswith(candidate, prefix_no_col) then
+                                item_data.text = candidate:sub(#prefix_no_col + 1)
+                            end
+                        end
                     end
                 end
                 table.insert(items, item_data)
