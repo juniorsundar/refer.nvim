@@ -89,14 +89,7 @@ end
 ---@param filename string Absolute file path
 ---@return string relative_path Relative path
 function M.get_relative_path(filename)
-    local cwd = vim.fn.getcwd()
-    if not cwd:match "/$" then
-        cwd = cwd .. "/"
-    end
-    if filename:sub(1, #cwd) == cwd then
-        return filename:sub(#cwd + 1)
-    end
-    return filename
+    return vim.fn.fnamemodify(filename, ":.")
 end
 
 ---Parse a selection string using a predefined format

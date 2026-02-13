@@ -88,6 +88,8 @@ Use `:Refer <subcommand>` to launch pickers:
 | `Commands`    | Execute Vim commands interactively           |
 | `References`  | List LSP references for symbol under cursor  |
 | `Definitions` | Go to LSP definition for symbol under cursor |
+| `Implementations` | Go to LSP implementation for symbol under cursor |
+| `Declarations` | Go to LSP declaration for symbol under cursor |
 
 ## Tutorials & Advanced Usage
 

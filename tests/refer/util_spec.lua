@@ -76,24 +76,22 @@ describe("refer.util", function()
     end)
 
     describe("get_relative_path", function()
-        local original_cwd
-        before_each(function()
-            original_cwd = vim.fn.getcwd()
-            stub(vim.fn, "getcwd", "/home/user/project")
-        end)
-
-        after_each(function()
-            vim.fn.getcwd:revert()
-        end)
-
         it("strips cwd from path", function()
             local abs = "/home/user/project/src/main.lua"
+            local s = stub(vim.fn, "fnamemodify", "src/main.lua")
+
             assert.are.same("src/main.lua", util.get_relative_path(abs))
+            assert.stub(s).was.called_with(abs, ":.")
+            s:revert()
         end)
 
         it("leaves outside paths alone", function()
             local abs = "/etc/hosts"
+            local s = stub(vim.fn, "fnamemodify", "/etc/hosts")
+
             assert.are.same("/etc/hosts", util.get_relative_path(abs))
+            assert.stub(s).was.called_with(abs, ":.")
+            s:revert()
         end)
     end)
 end)
