@@ -14,16 +14,21 @@ Table of Contents                               *refer.nvim-table-of-contents*
   [!IMPORTANT] Need to add Screenshots and GIFs
 `refer.nvim` is a minimalist picker for Neovim.
 
-It is designed to: - **Be intuitive:** It shouldn’t pull you out of your
-current context and meld in seamlessly with your workflow. - **Be clean:**
-Minimalist UI without floating windows and noise, a lot like Emacs minibuffers.
-- **Integrate:** With other plugins (use the fuzzy sorter used in your at-point
-completion in your selecter). - **Functionally hackable:** While there is
-limited flexibility in the picker’s aesthetics, it is functionally hackable
-in every way.
+It is designed to:
 
-It is not designed to: - **Be “blazingly fast”:** Speed is relative. This
-is, in essense, a picker plugin. I am not developing a super-fast fuzzy sorter.
+- **Be intuitive:** It shouldn’t pull you out of your current context and meld in
+    seamlessly with your workflow.
+- **Be clean:** Minimalist UI without floating windows and noise, a lot like
+    Emacs minibuffers.
+- **Integrate:** With other plugins (use the fuzzy sorter used in your at-point
+    completion in your selecter).
+- **Functionally hackable:** While there is limited flexibility in the picker’s
+    aesthetics, it is functionally hackable in every way.
+
+It is not designed to:
+
+- **Be “blazingly fast”:** Speed is relative. This is, in essense, a picker
+    plugin. I am not developing a super-fast fuzzy sorter.
 
 
 FEATURES                                                 *refer.nvim-features*
@@ -33,14 +38,17 @@ develop an optimised fuzzy sorter. There are already implementations out there
 that you can use. This plugin provides you with the ability to register these
 fuzzy sorter implementations.
 
-There are already some sorters registered: - **Blink:** Rust-based, extremely
-fast (Default for static lists) (Requires `blink.cmp` installed. Or else it
-will download just the library from GitHub.). - **Native:** Vim’s
-`matchfuzzy` (Vim is generous… |matchfuzzy()|.). - **Mini:** Support for
-`mini.fuzzy` if installed (This supports strings with spaces in them, unlike
-the above two options.). - **Lua:** Pure Lua fallback (Default for async file
-lists) (I kept this for posterity’s sake. Its by no means the most optimal
-option. Also supports strings with spaces in them.).
+There are already some sorters registered:
+
+- **Blink:** Rust-based, extremely fast (Default for static lists) (Requires
+    `blink.cmp` installed. Or else it will download just the library from
+    GitHub.).
+- **Native:** Vim’s `matchfuzzy` (Vim is generous… |matchfuzzy()|.).
+- **Mini:** Support for `mini.fuzzy` if installed (This supports strings with
+    spaces in them, unlike the above two options.).
+- **Lua:** Pure Lua fallback (Default for async file lists) (I kept this for
+    posterity’s sake. Its by no means the most optimal option. Also supports
+    strings with spaces in them.).
 
 
 REQUIREMENTS                                         *refer.nvim-requirements*
@@ -130,11 +138,18 @@ You can customize key bindings inside the picker window.
     })
 <
 
-**Default Keymaps:** - `<Tab>`: Complete selection (common prefix) - `<CR>`:
-Select entry - `<C-n>`/`<Down>`: Next item - `<C-p>`/`<Up>`: Previous item -
-`<C-v>`: Toggle preview - `<C-s>`: Cycle sorters (blink -> lua -> native) -
-`<C-q>`: Send to Quickfix list - `<C-g>`: (EXPERIMENTAL - Requires a WIP
-plugin) Send to "Grep" buffer (Editable results) - `<Esc>`/`<C-c>`: Close
+**Default Keymaps:**
+
+- `<Tab>`: Complete selection (common prefix)
+- `<CR>`: Select entry
+- `<C-n>`/`<Down>`: Next item
+- `<C-p>`/`<Up>`: Previous item
+- `<C-v>`: Toggle preview
+- `<C-s>`: Cycle sorters (blink -> lua -> native)
+- `<C-q>`: Send to Quickfix list
+- `<C-g>`: (EXPERIMENTAL - Requires a WIP plugin) Send to "Grep" buffer
+    (Editable results)
+- `<Esc>`/`<C-c>`: Close
 
 
 BRING YOUR OWN FUZZY (CUSTOM SORTERS) ~
