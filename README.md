@@ -75,6 +75,17 @@ Use `:Refer <subcommand>` to launch pickers:
 
 ## Tutorials & Advanced Usage
 
+- [Replacing `vim.ui.select`](#replacing-vimuiselect)
+- [Custom Keymaps](#custom-keymaps)
+- [Bring Your Own Fuzzy (Custom Sorters)](#bring-your-own-fuzzy-custom-sorters)
+- [Custom Parsers](#custom-parsers)
+- [Customizing File Search](#customizing-file-search-using-find)
+- [Customizing Grep](#customizing-grep-using-grep)
+- [Creating Custom Pickers](#creating-custom-pickers)
+  - [Static List Picker](#static-list-picker)
+  - [Async Command Picker](#async-command-picker)
+  - [Enabling Previews for Custom Items](#enabling-previews-for-custom-items)
+
 ### Replacing `vim.ui.select`
 Use `refer` as the interface for `vim.ui.select` (used by code actions and plugins):
 
@@ -184,7 +195,7 @@ require("refer").setup({
 ```
 
 ### Creating Custom Pickers
-**Static List Picker:**
+#### Static List Picker
 
 ```lua
 local refer = require("refer")
@@ -207,7 +218,7 @@ refer.pick(
 )
 ```
 
-**Async Command Picker:**
+#### Async Command Picker
 Create a picker that runs a shell command based on your query (e.g., `locate`).
 
 ```lua
@@ -226,6 +237,43 @@ refer.pick_async(
     {
         prompt = "Locate > ",
         debounce_ms = 200,
+    }
+)
+```
+
+#### Enabling Previews for Custom Items
+Create a picker with custom string formats and teach `refer` how to parse them so the built-in file previewer works.
+
+```lua
+local refer = require("refer")
+refer.pick(
+    {
+        -- Alternate format as col:lnum:filename
+        "10:5:lua/refer/picker.lua",
+        "20:1:README.md",
+    },
+    function(selection, data)
+        if data and data.filename then
+            vim.cmd("edit " .. data.filename)
+            vim.api.nvim_win_set_cursor(0, {data.lnum, data.col - 1})
+        end
+    end,
+    {
+        prompt = "Navigate > ",
+        preview = { enabled = true },
+        
+        -- Custom parser for "row:col:filename"
+        parser = function(selection)
+            local lnum, col, filename = selection:match("^(%d+):(%d+):(.+)$")
+            if filename then
+                return {
+                    filename = filename,
+                    lnum = tonumber(lnum),
+                    col = tonumber(col)
+                }
+            end
+            return nil
+        end
     }
 )
 ```
