@@ -307,6 +307,70 @@ refer.pick(
 )
 ```
 
+#### Decoupling Choices from Preview
+
+Sometimes you want the preview to correspond to something unrelated to the
+choice currently under selection. For example, you want to create a picker to
+move through the headings of a markdown file. You want the selections to be the
+heading text, but you want the preview to be where in the markdown file the
+heading is found.
+
+
+```lua
+local refer = require("refer")
+local api = vim.api
+
+if vim.bo.filetype ~= "markdown" then
+    return
+end
+
+local bufnr = api.nvim_get_current_buf()
+local filename = api.nvim_buf_get_name(bufnr)
+local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+local choices = {}
+local lookup = {}
+
+for lnum, line in ipairs(lines) do
+    local hashes, title = line:match("^(#+)%s+(.+)$")
+    if hashes then
+        local level = #hashes
+        local indent = string.rep("  ", level - 1)
+        local display_text = indent .. title
+        if not lookup[display_text] then
+            table.insert(choices, display_text)
+            lookup[display_text] = lnum
+        end
+    end
+end
+
+refer.pick(
+    choices,
+    function(selection)
+        local lnum = lookup[selection]
+        if lnum then
+            api.nvim_win_set_cursor(0, {lnum, 0})
+        end
+    end,
+    {
+        prompt = "Outline > ",
+        preview = { enabled = true },
+        
+        parser = function(selection)
+            local lnum = lookup[selection]
+            if lnum then
+                return {
+                    filename = filename,
+                    lnum = lnum,
+                    col = 1
+                }
+            end
+            return nil
+        end
+    }
+)
+```
+
 ## Configuration Reference
 
 The default configuration with all available options:
