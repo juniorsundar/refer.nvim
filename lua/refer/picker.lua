@@ -11,6 +11,9 @@ local actions = require "refer.actions"
 ---@field prev_item fun() Move to previous item
 ---@field complete_selection fun() Complete current selection
 ---@field toggle_mark fun() Toggle mark on current item
+---@field select_all fun() Select all visible items
+---@field deselect_all fun() Deselect all marked items globally
+---@field toggle_all fun() Toggle mark on all visible items
 ---@field select_input fun() Select raw input
 ---@field select_entry fun() Select current entry
 ---@field send_to_grep fun() Send marked items to grep buffer

@@ -65,6 +65,25 @@ function M.get_defaults(picker)
             end
         end,
 
+        select_all = function()
+            for _, item in ipairs(picker.current_matches) do
+                picker.marked[item] = true
+            end
+            picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
+        end,
+
+        deselect_all = function()
+            picker.marked = {}
+            picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
+        end,
+
+        toggle_all = function()
+            for _, item in ipairs(picker.current_matches) do
+                picker.marked[item] = not picker.marked[item]
+            end
+            picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
+        end,
+
         send_to_grep = function()
             local lines = {}
             for item, is_marked in pairs(picker.marked) do

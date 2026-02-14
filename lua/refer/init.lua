@@ -55,6 +55,9 @@ local default_opts = {
         ["<C-v>"] = "toggle_preview",
         ["<C-u>"] = "scroll_preview_up",
         ["<C-d>"] = "scroll_preview_down",
+        ["<M-a>"] = "select_all",
+        ["<M-d>"] = "deselect_all",
+        ["<M-t>"] = "toggle_all",
     },
 }
 
