@@ -2,13 +2,30 @@
 
 # refer.nvim
 
+*"Not capable enough to [consult](https://github.com/minad/consult), but everything your need to refer"*
+
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/juniorsundar/refer.nvim/lint-test.yml?branch=main&style=for-the-badge)
 ![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
 
 </div>
 
-> [!IMPORTANT]
-> Need to add Screenshots and GIFs
+## Introduction
+
+### Gallery
+
+#### Commands
+
+https://github.com/user-attachments/assets/d441844b-12ef-45a8-b2d4-560f8d7e6f10
+
+#### Files (`fd`) and Quickfix
+
+https://github.com/user-attachments/assets/2f91247d-5db0-42e6-b487-b97abb5e8b86
+
+#### LSP
+
+https://github.com/user-attachments/assets/3d31ddb8-abda-43c9-b62e-4b2d5b3ec890
+
+### About
 
 `refer.nvim` is a minimalist picker for Neovim.
 
