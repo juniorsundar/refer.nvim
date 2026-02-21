@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.0](https://github.com/juniorsundar/refer.nvim/compare/v0.1.0...v0.2.0) (2026-02-21)
+
+
+### Features
+
+* **LSP:** Toggle LSP clients ([22f0e60](https://github.com/juniorsundar/refer.nvim/commit/22f0e60a31ee1c1ea6296bfa72c97468cf2e0553))
+* **providers:** Search selection (visual/cword) ([d27e698](https://github.com/juniorsundar/refer.nvim/commit/d27e698cbced8211ba378e66fea1fa37aeeb4237))
+* **ui:** Input can be "top"/"bottom" of Results ([b7b729b](https://github.com/juniorsundar/refer.nvim/commit/b7b729bacd5ea2acaf7bd8583f1a45d184174b93))
+* **ui:** Results can be reversed (top&lt;-&gt;bottom) ([d40f912](https://github.com/juniorsundar/refer.nvim/commit/d40f9126f444c860faef9af267288ccf5f924d29))
+
+
+### Bug Fixes
+
+* **completion:** Issue with range marks. ([8035f65](https://github.com/juniorsundar/refer.nvim/commit/8035f658abb89a80f6faded4297eb39e009b43e9))
+* **completion:** Overlap in path completion ([2aa7cc0](https://github.com/juniorsundar/refer.nvim/commit/2aa7cc0596bb5a10c92f6ca5f50efd8a8b1a4853))
+* Return focus to original window on close ([9817057](https://github.com/juniorsundar/refer.nvim/commit/98170578de45dcdb506777f06a4ef58d8eabafed))
+
+
+### Documentation
+
+* Update README with Refer Selection ([d9c1585](https://github.com/juniorsundar/refer.nvim/commit/d9c15852337e81bdda9414bfbcaff0e5088211e8))
+
 ## [0.1.0](https://github.com/juniorsundar/refer.nvim/compare/v0.1.0...v0.1.0) (2026-02-14)
 
 
