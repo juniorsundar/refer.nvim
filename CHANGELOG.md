@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/juniorsundar/refer.nvim/compare/v0.2.0...v0.3.0) (2026-02-24)
+
+
+### Features
+
+* **commands:** Live preview of substitution cmd ([b95e42e](https://github.com/juniorsundar/refer.nvim/commit/b95e42e72450483dc6bc5b279ecea1b832de033b))
+* **files:** path-aware search w/ fd --full-path ([9e4268b](https://github.com/juniorsundar/refer.nvim/commit/9e4268b31cd4397949c59308465df284b8c544b5))
+* **health:** `checkhealth refer` to get healtcheck ([75c6978](https://github.com/juniorsundar/refer.nvim/commit/75c6978f6f3ebc40b8062ddd3846b147f47b6c38))
+
 ## [0.2.0](https://github.com/juniorsundar/refer.nvim/compare/v0.1.0...v0.2.0) (2026-02-21)
 
 
