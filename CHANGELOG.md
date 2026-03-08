@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.0](https://github.com/juniorsundar/refer.nvim/compare/v0.3.0...v0.4.0) (2026-03-08)
+
+
+### Features
+
+* Extension API to register custom :Refer commands ([07aa02a](https://github.com/juniorsundar/refer.nvim/commit/07aa02a95d7f6a7b3f11762464ef4efb35f7bb99))
+* **keymaps:** Add descriptions to keymaps ([ded0ab3](https://github.com/juniorsundar/refer.nvim/commit/ded0ab3719d95c610ccf66944d95831a3ff626cf))
+* **macros:** Macro editor with real-time preview ([aa45e92](https://github.com/juniorsundar/refer.nvim/commit/aa45e92ecab0e5b632744151a0e547f67ee66bf7))
+
+
+### Bug Fixes
+
+* **macros:** Robustness. Some edge cases with folds. ([eb9aa91](https://github.com/juniorsundar/refer.nvim/commit/eb9aa91b850e622697e8a0b5e91d83ad37a717ef))
+
+
+### Documentation
+
+* Add video for live Macro Editing + Preview ([725d253](https://github.com/juniorsundar/refer.nvim/commit/725d253b2efc25a7897e749735f5383ad4a8ba57))
+
+
+### Code Refactoring
+
+* **builtin:** Distribute due to heavy lua file ([1a8b689](https://github.com/juniorsundar/refer.nvim/commit/1a8b689ea341c280d535bac7a66367f491ecaa1e))
+
 ## [0.3.0](https://github.com/juniorsundar/refer.nvim/compare/v0.2.0...v0.3.0) (2026-02-24)
 
 
