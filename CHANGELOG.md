@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0](https://github.com/juniorsundar/refer.nvim/compare/v0.4.0...v0.5.0) (2026-03-17)
+
+
+### Features
+
+* Highlight selection line in the preview buffer ([b0f3627](https://github.com/juniorsundar/refer.nvim/commit/b0f3627f2532c7a5a9730c867e61b400c7d8f20b))
+* **LSP:** Pick Document Symbols ([b9812ac](https://github.com/juniorsundar/refer.nvim/commit/b9812acf3c26851f24bef061d27c43fed77980b7))
+* **providers:** Search lines ([71fecdc](https://github.com/juniorsundar/refer.nvim/commit/71fecdc31a242fc2692ebd393bcd46aa63dd90bf))
+
+
+### Bug Fixes
+
+* **ui:** Reduce whiplash on refer open ([67c81c7](https://github.com/juniorsundar/refer.nvim/commit/67c81c72dea159be082db57bb35b27eb658fc2f6))
+
+
+### Performance Improvements
+
+* Async picker and preview rendering management ([29d8d1a](https://github.com/juniorsundar/refer.nvim/commit/29d8d1a9ba7d96867fae262215372079caf5e689))
+* Cursor navigation does not trigger redraw ([1a6a29f](https://github.com/juniorsundar/refer.nvim/commit/1a6a29f5010f06c22a2f5f9b9e9512e46d95bea9))
+* Reduce redraws of preview if only minor changes ([c39788d](https://github.com/juniorsundar/refer.nvim/commit/c39788dcff0cd66e317684a8b4e7ab2305d6c8e0))
+
 ## [0.4.0](https://github.com/juniorsundar/refer.nvim/compare/v0.3.0...v0.4.0) (2026-03-08)
 
 
