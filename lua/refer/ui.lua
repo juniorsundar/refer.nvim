@@ -265,8 +265,8 @@ function UI:render(matches, selected_index, marked)
     api.nvim_buf_clear_namespace(self.results_buf, self.ns_cursor, 0, -1)
     if first_diff <= new_count then
         api.nvim_buf_clear_namespace(self.results_buf, self.ns_matches, first_diff - 1, -1)
-        api.nvim_buf_clear_namespace(self.results_buf, self.ns_marks, first_diff - 1, -1)
     end
+    api.nvim_buf_clear_namespace(self.results_buf, self.ns_marks, 0, -1)
 
     if first_diff <= new_count then
         for i = first_diff, new_count do
@@ -278,21 +278,25 @@ function UI:render(matches, selected_index, marked)
             end
             -- ns_matches (== ns_id) is passed so highlight.lua continues to work unchanged
             highlight.highlight_entry(self.results_buf, self.ns_matches, line_idx, line, hl_code, self.opts)
+        end
+    end
 
-            if marked and marked[line] then
-                local mark_char = "●"
-                local mark_hl = "String"
-                if self.opts.ui then
-                    mark_char = self.opts.ui.mark_char or mark_char
-                    mark_hl = self.opts.ui.mark_hl or mark_hl
-                end
-
-                api.nvim_buf_set_extmark(self.results_buf, self.ns_marks, line_idx, 0, {
-                    sign_text = mark_char,
-                    sign_hl_group = mark_hl,
-                    priority = 105,
-                })
+    for i = 1, new_count do
+        local line = item_text(visible_matches[i])
+        local line_idx = i - 1
+        if marked and marked[line] then
+            local mark_char = "●"
+            local mark_hl = "String"
+            if self.opts.ui then
+                mark_char = self.opts.ui.mark_char or mark_char
+                mark_hl = self.opts.ui.mark_hl or mark_hl
             end
+
+            api.nvim_buf_set_extmark(self.results_buf, self.ns_marks, line_idx, 0, {
+                sign_text = mark_char,
+                sign_hl_group = mark_hl,
+                priority = 105,
+            })
         end
     end
 

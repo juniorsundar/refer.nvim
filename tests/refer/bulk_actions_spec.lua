@@ -1,5 +1,6 @@
 local refer = require "refer"
 local Picker = require "refer.picker"
+local UI = require "refer.ui"
 
 describe("refer.bulk_actions", function()
     local picker
@@ -67,5 +68,23 @@ describe("refer.bulk_actions", function()
         assert.is_false(picker.marked["item2"])
 
         assert.is_true(picker.marked["item3"])
+    end)
+
+    it("renders a visible mark sign when toggle_mark is used", function()
+        local ui = UI.new("Test > ", {})
+        local input_buf, _ = ui:create_windows(2)
+        picker.ui = ui
+        picker.input_buf = input_buf
+        picker.marked = {}
+        picker.current_matches = { "one", "two" }
+        picker.selected_index = 1
+
+        picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
+        picker.actions.toggle_mark()
+
+        local marks = vim.api.nvim_buf_get_extmarks(picker.ui.results_buf, picker.ui.ns_marks, 0, -1, { details = true })
+
+        assert.is_true(#marks > 0)
+        assert.are.same("● ", marks[1][4].sign_text)
     end)
 end)
