@@ -49,21 +49,11 @@ refer.add_command("Symbols", function(opts)
 end)
 
 vim.api.nvim_create_user_command("Refer", function(opts)
-    local subcommand_key = opts.fargs[1]
-    local func = refer.get_commands()[subcommand_key]
-    if func then
-        func(opts)
-    else
-        vim.notify("Refer: Unknown subcommand: " .. subcommand_key, vim.log.levels.ERROR)
-    end
+    require("refer.commands").dispatch(opts.fargs, opts)
 end, {
-    nargs = 1,
+    nargs = "*",
     range = true,
     complete = function(ArgLead, CmdLine, CursorPos)
-        local keys = vim.tbl_keys(refer.get_commands())
-        table.sort(keys)
-        return vim.tbl_filter(function(key)
-            return key:find(ArgLead, 1, true) == 1
-        end, keys)
+        return require("refer.commands").complete(ArgLead, CmdLine, CursorPos)
     end,
 })

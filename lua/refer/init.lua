@@ -3,13 +3,31 @@ local Picker = require "refer.picker"
 ---@class ReferModule
 local M = {}
 
----@type table<string, function> The central registry of subcommands
+---@type table<string, function|table> The central registry of subcommands
 M._registry = {}
 
 ---Register a new subcommand for :Refer
----@param name string The name of the command (e.g., "GitStatus")
+---@param name string|string[] The command name or path (e.g., "GitStatus" or { "Extras", "FindFile" })
 ---@param fn function The function to execute when the command is run
 function M.add_command(name, fn)
+    if type(name) == "table" then
+        local node = M._registry
+        for i = 1, #name - 1 do
+            local segment = name[i]
+            if type(node[segment]) ~= "table" then
+                node[segment] = {}
+            end
+            node = node[segment]
+        end
+
+        local final_segment = name[#name]
+        if node[final_segment] then
+            vim.notify("Refer: Overwriting existing command '" .. table.concat(name, " ") .. "'", vim.log.levels.WARN)
+        end
+        node[final_segment] = fn
+        return
+    end
+
     if M._registry[name] then
         vim.notify("Refer: Overwriting existing command '" .. name .. "'", vim.log.levels.WARN)
     end
@@ -70,6 +88,7 @@ local default_opts = {
         enabled = true,
         max_lines = 1000,
     },
+    extras = {},
     keymaps = {
         ["<Tab>"] = { action = "complete_selection", desc = "Complete selection" },
         ["<C-n>"] = { action = "next_item", desc = "Next item" },
@@ -108,6 +127,10 @@ function M.setup(opts)
         end
     end
     default_opts = vim.tbl_deep_extend("force", default_opts, opts)
+    if opts.extras ~= nil then
+        default_opts.extras = vim.deepcopy(opts.extras)
+    end
+    require("refer.extras").setup(default_opts.extras)
 end
 
 ---Get combined options

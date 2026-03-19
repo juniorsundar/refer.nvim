@@ -49,7 +49,12 @@ function M.get_defaults(picker)
             local input = api.nvim_get_current_line()
 
             if item then
-                local selection = type(item) == "table" and item.text or item
+                local selection
+                if type(item) == "table" then
+                    selection = (item.data and item.data.filename) or item.text
+                else
+                    selection = item
+                end
                 local new_line = util.complete_line(input, selection)
                 picker.ui:update_input { new_line }
                 picker:refresh()
