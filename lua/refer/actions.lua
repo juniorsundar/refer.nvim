@@ -8,6 +8,29 @@ local M = {}
 ---@param picker Picker The picker instance
 ---@return table<string, function> actions
 function M.get_defaults(picker)
+    local function get_selection_data()
+        local selection = picker.current_matches[picker.selected_index]
+        if not selection then
+            return nil, nil
+        end
+
+        local data = picker.parser and picker.parser(selection)
+        return selection, data
+    end
+
+    local function open_entry(cmd)
+        local selection, data = get_selection_data()
+        if not selection then
+            return
+        end
+
+        picker:close()
+        if cmd then
+            vim.cmd(cmd)
+        end
+        util.jump_to_location(selection, data)
+    end
+
     return {
         refresh = function()
             picker:refresh()
@@ -51,12 +74,29 @@ function M.get_defaults(picker)
         end,
 
         select_entry = function()
-            local selection = picker.current_matches[picker.selected_index]
-            if selection then
-                picker:close()
-                local data = picker.parser and picker.parser(selection)
-                picker.on_select(selection, data)
+            local selection, data = get_selection_data()
+            if not selection then
+                return
             end
+
+            picker:close()
+            picker.on_select(selection, data)
+        end,
+
+        edit_entry = function()
+            open_entry(nil)
+        end,
+
+        split_entry = function()
+            open_entry "split"
+        end,
+
+        vsplit_entry = function()
+            open_entry "vsplit"
+        end,
+
+        tab_entry = function()
+            open_entry "tabnew"
         end,
 
         select_all = function()
