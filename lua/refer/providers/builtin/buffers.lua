@@ -21,7 +21,15 @@ local function buffers(opts)
                     row_col[2] = 1
                 end
                 local entry = string.format("%d: %s:%d:%d", bufnr, relative_path, row_col[1], row_col[2])
-                table.insert(items, entry)
+                table.insert(items, {
+                    text = entry,
+                    data = {
+                        bufnr = bufnr,
+                        filename = name,
+                        lnum = row_col[1],
+                        col = row_col[2],
+                    },
+                })
             end
         end
     end
@@ -34,9 +42,10 @@ local function buffers(opts)
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "select_entry",
-                ["<C-x>"] = function(selection, builtin)
-                    local parser = util.parsers.buffer
-                    local data = parser(selection)
+                ["<C-x>"] = function(refer_item, builtin)
+                    -- refer_item is now a ReferItem table; extract data directly
+                    local data = (type(refer_item) == "table" and refer_item.data)
+                        or (util.parsers.buffer(type(refer_item) == "table" and refer_item.text or refer_item))
                     if data and data.bufnr then
                         local win = builtin.parameters.original_win
                         if win and vim.api.nvim_win_is_valid(win) then
@@ -50,8 +59,10 @@ local function buffers(opts)
 
                         pcall(vim.api.nvim_buf_delete, data.bufnr, { force = true })
 
+                        local target_text = type(refer_item) == "table" and refer_item.text or refer_item
                         for i, item in ipairs(items) do
-                            if item == selection then
+                            local item_text = type(item) == "table" and item.text or item
+                            if item_text == target_text then
                                 table.remove(items, i)
                                 break
                             end

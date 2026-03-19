@@ -18,7 +18,8 @@ describe("refer (custom sorters)", function()
         local items = { "abc", "cba", "xyz" }
         local res = fuzzy.filter(items, "abc", { sorter = "reverse" })
 
-        assert.are.same({ "cba" }, res)
+        assert.are.same(1, #res)
+        assert.are.same("cba", res[1].text)
     end)
 
     it("can register custom sorters via setup options", function()
@@ -43,7 +44,9 @@ describe("refer (custom sorters)", function()
         local items = { "apple", "banana", "apricot" }
         local res = fuzzy.filter(items, "ap", { sorter = "prefix" })
 
-        assert.are.same({ "apple", "apricot" }, res)
+        assert.are.same(2, #res)
+        assert.are.same("apple", res[1].text)
+        assert.are.same("apricot", res[2].text)
     end)
 
     it("ignores invalid sorter registration", function()

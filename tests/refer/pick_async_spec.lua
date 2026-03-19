@@ -29,7 +29,7 @@ describe("refer.pick_async", function()
         end)
 
         assert.are.same(1, #picker.current_matches)
-        assert.are.same("result_foo", picker.current_matches[1])
+        assert.are.same("result_foo", picker.current_matches[1].text)
     end)
 
     it("handles multiple lines of output", function()
@@ -46,8 +46,8 @@ describe("refer.pick_async", function()
         end)
 
         assert.are.same(2, #picker.current_matches)
-        assert.are.same("A", picker.current_matches[1])
-        assert.are.same("B", picker.current_matches[2])
+        assert.are.same("A", picker.current_matches[1].text)
+        assert.are.same("B", picker.current_matches[2].text)
     end)
 
     it("can post-process results", function()
@@ -72,8 +72,8 @@ describe("refer.pick_async", function()
         end)
 
         assert.are.same(2, #picker.current_matches)
-        assert.are.same("foo", picker.current_matches[1])
-        assert.are.same("bar_baz", picker.current_matches[2])
+        assert.are.same("foo", picker.current_matches[1].text)
+        assert.are.same("bar_baz", picker.current_matches[2].text)
     end)
 
     it("preserves selected_index across streaming timer ticks", function()

@@ -112,6 +112,11 @@ function Picker.new(items_or_provider, opts)
     self.opts = opts or {}
     self.on_select = self.opts.on_select
 
+    -- Normalize table-based item lists into ReferItem[] at intake
+    if type(items_or_provider) == "table" then
+        self.items_or_provider = util.normalize_items(items_or_provider)
+    end
+
     self.original_win = api.nvim_get_current_win()
     self.original_buf = api.nvim_win_get_buf(self.original_win)
     self.original_cursor = api.nvim_win_get_cursor(self.original_win)
@@ -145,7 +150,7 @@ function Picker.new(items_or_provider, opts)
     -- Blink setup
     self.use_blink = fuzzy.has_blink() and type(items_or_provider) == "table" and not self.custom_sorter
     if self.use_blink then
-        fuzzy.register_items(items_or_provider)
+        fuzzy.register_items(self.items_or_provider)
     end
 
     -- State
@@ -382,12 +387,12 @@ function Picker:update_preview()
                 return
             end
 
-            local selection = self.current_matches[self.selected_index]
-            if not selection then
+            local item = self.current_matches[self.selected_index]
+            if not item then
                 return
             end
-
-            local data = self.parser and self.parser(selection)
+            local selection = type(item) == "table" and item.text or item
+            local data = (type(item) == "table" and item.data) or (self.parser and self.parser(selection))
             if data and data.filename and api.nvim_win_is_valid(self.original_win) then
                 self.is_previewing = true
                 preview.show {
@@ -437,7 +442,8 @@ function Picker:navigate(delta)
 
     self.selected_index = new_idx
 
-    local selected_text = self.current_matches[new_idx] or ""
+    local selected_item = self.current_matches[new_idx]
+    local selected_text = (selected_item and type(selected_item) == "table") and selected_item.text or (selected_item or "")
     local count_str = string.format("%d/%d ", new_idx, total)
 
     local fast_ok = self.ui:update_selection(old_idx, new_idx, total, selected_text, count_str)
@@ -483,7 +489,7 @@ function Picker:refresh()
                         return
                     end
 
-                    self.current_matches = matches or {}
+                    self.current_matches = util.normalize_items(matches or {})
                     if first_render then
                         self.selected_index = 1
                         first_render = false
@@ -512,9 +518,9 @@ end
 ---Update the items in the picker
 ---@param new_items table New list of items
 function Picker:set_items(new_items)
-    self.items_or_provider = new_items
+    self.items_or_provider = util.normalize_items(new_items)
     if self.use_blink then
-        fuzzy.register_items(new_items)
+        fuzzy.register_items(self.items_or_provider)
     end
     self:refresh()
 end

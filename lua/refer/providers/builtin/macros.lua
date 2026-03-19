@@ -10,7 +10,10 @@ local function macros(opts)
         local val = vim.fn.getreg(reg)
         if val ~= "" then
             local readable_val = vim.fn.keytrans(val)
-            table.insert(items, string.format("%s: %s", reg, readable_val))
+            table.insert(items, {
+                text = string.format("%s: %s", reg, readable_val),
+                data = { register = reg, content = readable_val },
+            })
         end
     end
 
@@ -106,9 +109,9 @@ local function macros(opts)
 
     local picker = refer.pick(
         items,
-        function(selection)
-            local reg = selection:sub(1, 1)
-            local content = selection:sub(4)
+        function(selection, item_data)
+            local reg = (item_data and item_data.register) or selection:sub(1, 1)
+            local content = (item_data and item_data.content) or selection:sub(4)
 
             vim.schedule(function()
                 edit_macro(reg, content, caller_win, caller_buf, opts)
@@ -119,11 +122,13 @@ local function macros(opts)
             preview = { enabled = false },
             keymaps = {
                 ["<CR>"] = "select_entry",
-                ["<C-r>"] = function(selection, builtin)
+                ["<C-r>"] = function(refer_item, builtin)
+                    local selection = type(refer_item) == "table" and refer_item.text or refer_item
                     if not selection or selection == "" then
                         return
                     end
-                    local reg = selection:sub(1, 1)
+                    local reg = (type(refer_item) == "table" and refer_item.data and refer_item.data.register)
+                        or selection:sub(1, 1)
                     vim.fn.setreg(reg, "")
                     builtin.actions.close()
                     vim.schedule(function()

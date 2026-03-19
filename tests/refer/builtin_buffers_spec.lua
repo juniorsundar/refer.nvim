@@ -41,10 +41,11 @@ describe("builtin.buffers", function()
         local found_file1 = false
         local found_file2 = false
         for _, item in ipairs(picker.items_or_provider) do
-            if item:find("file1.lua", 1, true) then
+            local text = type(item) == "table" and item.text or item
+            if text:find("file1.lua", 1, true) then
                 found_file1 = true
             end
-            if item:find("file2.lua", 1, true) then
+            if text:find("file2.lua", 1, true) then
                 found_file2 = true
             end
         end
@@ -65,8 +66,9 @@ describe("builtin.buffers", function()
 
         local found = false
         for _, item in ipairs(picker.items_or_provider) do
-            if item:find("formatted.lua", 1, true) then
-                assert.is_truthy(item:match "^%d+: .+:%d+:%d+$")
+            local text = type(item) == "table" and item.text or item
+            if text:find("formatted.lua", 1, true) then
+                assert.is_truthy(text:match "^%d+: .+:%d+:%d+$")
                 found = true
                 break
             end
@@ -88,7 +90,8 @@ describe("builtin.buffers", function()
 
         local found = false
         for _, item in ipairs(picker.items_or_provider) do
-            if item:find("unlisted.lua", 1, true) then
+            local text = type(item) == "table" and item.text or item
+            if text:find("unlisted.lua", 1, true) then
                 found = true
                 break
             end
@@ -124,7 +127,8 @@ describe("builtin.old_files", function()
         picker = builtin.old_files()
 
         assert.is_true(#picker.items_or_provider >= 1)
-        assert.are.same(file, picker.items_or_provider[1])
+        local first_text = type(picker.items_or_provider[1]) == "table" and picker.items_or_provider[1].text or picker.items_or_provider[1]
+        assert.are.same(file, first_text)
     end)
 
     it("skips non-readable files", function()

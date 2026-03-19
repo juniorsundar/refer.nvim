@@ -9,12 +9,12 @@ local M = {}
 ---@return table<string, function> actions
 function M.get_defaults(picker)
     local function get_selection_data()
-        local selection = picker.current_matches[picker.selected_index]
-        if not selection then
+        local item = picker.current_matches[picker.selected_index]
+        if not item then
             return nil, nil
         end
-
-        local data = picker.parser and picker.parser(selection)
+        local selection = type(item) == "table" and item.text or item
+        local data = (type(item) == "table" and item.data) or (picker.parser and picker.parser(selection))
         return selection, data
     end
 
@@ -45,10 +45,11 @@ function M.get_defaults(picker)
         end,
 
         complete_selection = function()
-            local selection = picker.current_matches[picker.selected_index]
+            local item = picker.current_matches[picker.selected_index]
             local input = api.nvim_get_current_line()
 
-            if selection then
+            if item then
+                local selection = type(item) == "table" and item.text or item
                 local new_line = util.complete_line(input, selection)
                 picker.ui:update_input { new_line }
                 picker:refresh()
@@ -56,9 +57,10 @@ function M.get_defaults(picker)
         end,
 
         toggle_mark = function()
-            local selection = picker.current_matches[picker.selected_index]
-            if selection then
-                picker.marked[selection] = not picker.marked[selection]
+            local item = picker.current_matches[picker.selected_index]
+            if item then
+                local key = type(item) == "table" and item.text or item
+                picker.marked[key] = not picker.marked[key]
                 picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
             end
             picker.actions.next_item()
@@ -101,7 +103,8 @@ function M.get_defaults(picker)
 
         select_all = function()
             for _, item in ipairs(picker.current_matches) do
-                picker.marked[item] = true
+                local key = type(item) == "table" and item.text or item
+                picker.marked[key] = true
             end
             picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
         end,
@@ -113,23 +116,25 @@ function M.get_defaults(picker)
 
         toggle_all = function()
             for _, item in ipairs(picker.current_matches) do
-                picker.marked[item] = not picker.marked[item]
+                local key = type(item) == "table" and item.text or item
+                picker.marked[key] = not picker.marked[key]
             end
             picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
         end,
 
         send_to_grep = function()
             local lines = {}
-            for item, is_marked in pairs(picker.marked) do
+            for item_key, is_marked in pairs(picker.marked) do
                 if is_marked then
-                    table.insert(lines, item)
+                    table.insert(lines, item_key)
                 end
             end
 
             if #lines == 0 then
-                local selection = picker.current_matches[picker.selected_index]
-                if selection then
-                    table.insert(lines, selection)
+                local item = picker.current_matches[picker.selected_index]
+                if item then
+                    local text = type(item) == "table" and item.text or item
+                    table.insert(lines, text)
                 end
             end
 
@@ -150,17 +155,18 @@ function M.get_defaults(picker)
 
             local candidates = {}
             local has_marked = false
-            for item, is_marked in pairs(picker.marked) do
+            for item_key, is_marked in pairs(picker.marked) do
                 if is_marked then
                     has_marked = true
-                    table.insert(candidates, item)
+                    table.insert(candidates, item_key)
                 end
             end
 
             if not has_marked then
-                local selection = picker.current_matches[picker.selected_index]
-                if selection then
-                    table.insert(candidates, selection)
+                local item = picker.current_matches[picker.selected_index]
+                if item then
+                    local text = type(item) == "table" and item.text or item
+                    table.insert(candidates, text)
                 end
             end
 
@@ -168,35 +174,46 @@ function M.get_defaults(picker)
                 return
             end
 
+            -- Build a lookup from text -> ReferItem for data access
+            local item_by_text = {}
+            for _, item in ipairs(picker.current_matches) do
+                if type(item) == "table" then
+                    item_by_text[item.text] = item
+                end
+            end
+
             picker:close()
 
             for _, candidate in ipairs(candidates) do
+                local refer_item = item_by_text[candidate]
                 local item_data = { text = candidate }
-                if picker.parser then
-                    local parsed = picker.parser(candidate)
-                    if parsed then
-                        if parsed.filename then
-                            item_data.filename = parsed.filename
-                        end
-                        if parsed.lnum then
-                            item_data.lnum = parsed.lnum
-                        end
-                        if parsed.col then
-                            item_data.col = parsed.col
-                        end
 
-                        if parsed.content then
-                            item_data.text = parsed.content
-                        elseif parsed.filename and parsed.lnum then
-                            -- Fallback: try to strip the coordinate prefix from the text
-                            local prefix_col = string.format("%s:%d:%d:", parsed.filename, parsed.lnum, parsed.col or 0)
-                            local prefix_no_col = string.format("%s:%d:", parsed.filename, parsed.lnum)
+                -- Prefer item.data if available, else fall back to parser
+                local parsed = (refer_item and refer_item.data)
+                    or (picker.parser and picker.parser(candidate))
 
-                            if vim.startswith(candidate, prefix_col) then
-                                item_data.text = candidate:sub(#prefix_col + 1)
-                            elseif vim.startswith(candidate, prefix_no_col) then
-                                item_data.text = candidate:sub(#prefix_no_col + 1)
-                            end
+                if parsed then
+                    if parsed.filename then
+                        item_data.filename = parsed.filename
+                    end
+                    if parsed.lnum then
+                        item_data.lnum = parsed.lnum
+                    end
+                    if parsed.col then
+                        item_data.col = parsed.col
+                    end
+
+                    if parsed.content then
+                        item_data.text = parsed.content
+                    elseif parsed.filename and parsed.lnum then
+                        -- Fallback: try to strip the coordinate prefix from the text
+                        local prefix_col = string.format("%s:%d:%d:", parsed.filename, parsed.lnum, parsed.col or 0)
+                        local prefix_no_col = string.format("%s:%d:", parsed.filename, parsed.lnum)
+
+                        if vim.startswith(candidate, prefix_col) then
+                            item_data.text = candidate:sub(#prefix_col + 1)
+                        elseif vim.startswith(candidate, prefix_no_col) then
+                            item_data.text = candidate:sub(#prefix_no_col + 1)
                         end
                     end
                 end

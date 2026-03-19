@@ -164,7 +164,8 @@ describe("refer.fuzzy", function()
             local items = { "one", "two" }
             local res = fuzzy.filter(items, "one", { use_blink = true })
 
-            assert.are.same({ "one" }, res)
+            assert.are.same(1, #res)
+            assert.are.same("one", res[1].text)
         end)
 
         it("handles provider functions", function()
@@ -172,19 +173,67 @@ describe("refer.fuzzy", function()
                 return { "mock_" .. q }
             end
             local res = fuzzy.filter(provider, "test")
-            assert.are.same({ "mock_test" }, res)
+            assert.are.same(1, #res)
+            assert.are.same("mock_test", res[1].text)
         end)
 
         it("returns all items for empty query", function()
             local items = { "a", "b", "c" }
             local res = fuzzy.filter(items, "")
-            assert.are.same({ "a", "b", "c" }, res)
+            assert.are.same(3, #res)
+            assert.are.same("a", res[1].text)
+            assert.are.same("b", res[2].text)
+            assert.are.same("c", res[3].text)
         end)
 
         it("resolves sorter by name string", function()
             local items = { "apple", "banana", "apricot" }
             local res = fuzzy.filter(items, "ap", { sorter = "lua" })
             assert.are.same(2, #res)
+        end)
+
+        -- ReferItem contract tests
+        it("returns ReferItem[] when given string[] input", function()
+            local items = { "foo", "bar" }
+            local res = fuzzy.filter(items, "fo", { sorter = "lua" })
+            assert.are.same(1, #res)
+            assert.are.same("table", type(res[1]))
+            assert.are.same("foo", res[1].text)
+        end)
+
+        it("returns ReferItem[] when given ReferItem[] input", function()
+            local items = { { text = "foo" }, { text = "bar" } }
+            local res = fuzzy.filter(items, "fo", { sorter = "lua" })
+            assert.are.same(1, #res)
+            assert.are.same("table", type(res[1]))
+            assert.are.same("foo", res[1].text)
+        end)
+
+        it("preserves item.data through filter", function()
+            local items = { { text = "foo", data = { lnum = 42 } }, { text = "bar" } }
+            local res = fuzzy.filter(items, "fo", { sorter = "lua" })
+            assert.are.same(1, #res)
+            assert.are.same("foo", res[1].text)
+            assert.are.same(42, res[1].data.lnum)
+        end)
+
+        it("returns all ReferItems for empty query", function()
+            local items = { { text = "foo" }, { text = "bar" } }
+            local res = fuzzy.filter(items, "", {})
+            assert.are.same(2, #res)
+            assert.are.same("foo", res[1].text)
+            assert.are.same("bar", res[2].text)
+        end)
+    end)
+
+    describe("register_items", function()
+        it("extracts .text for blink registration from ReferItem inputs", function()
+            -- When blink is not available, register_items returns false — just verify
+            -- the function handles ReferItem tables without error
+            local items = { { text = "alpha" }, { text = "beta" } }
+            -- blink is stubbed as unavailable, so this returns false without error
+            local ok = fuzzy.register_items(items)
+            assert.is_false(ok)
         end)
     end)
 end)

@@ -12,6 +12,10 @@ local M = {}
 ---@field bufnr? number Buffer number
 ---@field content? string Line content
 
+---@class ReferItem
+---@field text string Display text for UI and fuzzy sorter
+---@field data any|nil Structured payload carried alongside the display text
+
 ---@type table<string, Schema> Predefined parsing schemas
 local schemas = {
     buffer = {
@@ -229,6 +233,22 @@ function M.get_line_content(filename, lnum)
 
     local lines = vim.fn.readfile(filename, "", lnum)
     return lines[lnum] or ""
+end
+
+---Normalize a list of items into ReferItem tables.
+---Bare strings are wrapped into { text = string }. Already-structured items pass through unchanged.
+---@param items table List of strings or ReferItem tables (may be mixed)
+---@return ReferItem[] normalized
+function M.normalize_items(items)
+    local result = {}
+    for _, item in ipairs(items) do
+        if type(item) == "string" then
+            table.insert(result, { text = item })
+        else
+            table.insert(result, item)
+        end
+    end
+    return result
 end
 
 return M

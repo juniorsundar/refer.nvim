@@ -24,7 +24,8 @@ describe("builtin.macros", function()
         picker = builtin.macros()
         local found = false
         for _, item in ipairs(picker.items) do
-            if item:sub(1, 1) == "a" then
+            local text = type(item) == "table" and item.text or item
+            if text:sub(1, 1) == "a" then
                 found = true
                 break
             end

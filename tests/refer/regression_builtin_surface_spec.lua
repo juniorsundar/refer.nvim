@@ -195,7 +195,7 @@ describe("refer regression builtin surface", function()
             assert.are.same(2, picker.selected_index)
 
             local target = picker.current_matches[picker.selected_index]
-            assert.is_truthy(target:find("buffer%-one%.lua") or target:find("buffer%-two%.lua"))
+            assert.is_truthy(target.text:find("buffer%-one%.lua") or target.text:find("buffer%-two%.lua"))
 
             picker.actions.select_entry()
             assert.is_true(vim.api.nvim_buf_get_name(0):find("buffer%-%a+%.lua") ~= nil)
@@ -210,7 +210,7 @@ describe("refer regression builtin surface", function()
             wait_for_matches(picker, 1)
 
             assert.are.same("Recent Files > ", picker.opts.prompt)
-            assert.are.same(recent, picker.current_matches[1])
+            assert.are.same(recent, picker.current_matches[1].text)
 
             picker.actions.select_entry()
             assert.are.same(recent, vim.api.nvim_buf_get_name(0))
@@ -267,7 +267,7 @@ describe("refer regression builtin surface", function()
 
             assert.are.same("Lines > ", picker.opts.prompt)
             assert.are.same(1, picker.selected_index)
-            assert.is_truthy(picker.current_matches[1]:find("alpha", 1, true))
+            assert.is_truthy(picker.current_matches[1].text:find("alpha", 1, true))
 
             picker.actions.next_item()
             assert.are.same(2, picker.selected_index)

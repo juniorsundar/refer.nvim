@@ -223,6 +223,11 @@ function UI:render(matches, selected_index, marked)
         end
     end
 
+    -- Extract text strings for buffer writing (items may be ReferItem tables)
+    local function item_text(item)
+        return (type(item) == "table") and item.text or (item or "")
+    end
+
     local current_lines = api.nvim_buf_get_lines(self.results_buf, 0, -1, false)
     local current_count = #current_lines
     local new_count = #visible_matches
@@ -232,7 +237,7 @@ function UI:render(matches, selected_index, marked)
         local min_count = math.min(current_count, new_count)
         first_diff = min_count + 1
         for i = 1, min_count do
-            if (current_lines[i] or "") ~= (visible_matches[i] or "") then
+            if (current_lines[i] or "") ~= item_text(visible_matches[i]) then
                 first_diff = i
                 break
             end
@@ -240,14 +245,14 @@ function UI:render(matches, selected_index, marked)
 
         local tail = {}
         for i = first_diff, new_count do
-            table.insert(tail, visible_matches[i])
+            table.insert(tail, item_text(visible_matches[i]))
         end
         api.nvim_buf_set_lines(self.results_buf, first_diff - 1, -1, false, tail)
     else
         first_diff = new_count + 1
         for i = 1, new_count do
             local old_line = current_lines[i] or ""
-            local new_line = visible_matches[i] or ""
+            local new_line = item_text(visible_matches[i])
             if old_line ~= new_line then
                 if first_diff > i then
                     first_diff = i
@@ -265,7 +270,7 @@ function UI:render(matches, selected_index, marked)
 
     if first_diff <= new_count then
         for i = first_diff, new_count do
-            local line = visible_matches[i]
+            local line = item_text(visible_matches[i])
             local line_idx = i - 1
             local hl_code = true
             if self.opts.highlight_code ~= nil then
@@ -298,7 +303,7 @@ function UI:render(matches, selected_index, marked)
         relative_selected_idx = selected_index - start_idx + 1
     end
     if relative_selected_idx > 0 and relative_selected_idx <= #visible_matches then
-        local selected_text = visible_matches[relative_selected_idx]
+        local selected_text = item_text(visible_matches[relative_selected_idx])
         local selection_hl = "Visual"
         if self.opts.ui and self.opts.ui.highlights and self.opts.ui.highlights.selection then
             selection_hl = self.opts.ui.highlights.selection

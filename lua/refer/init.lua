@@ -161,7 +161,7 @@ function M.select(items, opts, on_choice)
     opts = opts or {}
 
     local choices = {}
-    local lookup = {}
+    local seen_texts = {}  -- for dedup collision detection only
 
     local format_item = opts.format_item or tostring
 
@@ -169,24 +169,25 @@ function M.select(items, opts, on_choice)
         local text = format_item(item)
 
         local unique_text = text
-        if lookup[unique_text] then
+        if seen_texts[unique_text] then
             local count = 1
-            while lookup[unique_text .. " (" .. count .. ")"] do
+            while seen_texts[unique_text .. " (" .. count .. ")"] do
                 count = count + 1
             end
             unique_text = unique_text .. " (" .. count .. ")"
         end
+        seen_texts[unique_text] = true
 
-        table.insert(choices, unique_text)
-        lookup[unique_text] = { item = item, idx = i }
+        table.insert(choices, { text = unique_text, data = { item = item, idx = i } })
     end
 
     local selected = false
 
-    local function on_select(selection)
-        local data = lookup[selection]
-        if data then
-            on_choice(data.item, data.idx)
+    -- After Plan 02, picker.on_select is called as on_select(item.text, item.data)
+    local function on_select(selection_text, item_data)
+        if item_data then
+            selected = true
+            on_choice(item_data.item, item_data.idx)
         end
     end
 

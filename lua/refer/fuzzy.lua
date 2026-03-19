@@ -1,6 +1,7 @@
 local M = {}
 
 local blink = require "refer.blink"
+local util = require "refer.util"
 
 ---@alias ReferSorterFn fun(items: table, query: string): table
 
@@ -159,7 +160,7 @@ function M.register_sorter(name, sorter_fn)
 end
 
 ---Register items with Blink's Rust engine if available
----@param items table List of strings
+---@param items table List of strings or ReferItem tables
 ---@return boolean success Whether registration succeeded
 function M.register_items(items)
     if not blink.is_available() then
@@ -168,26 +169,42 @@ function M.register_items(items)
 
     local blink_items = {}
     for _, item in ipairs(items) do
-        table.insert(blink_items, { label = item, sortText = item })
+        local label = type(item) == "string" and item or item.text
+        table.insert(blink_items, { label = label, sortText = label })
     end
     blink.set_provider_items("refer", blink_items)
     return true
 end
 
 ---Filter items based on query
----@param items_or_provider table|fun(query: string): table List of strings or a provider function
+---@param items_or_provider table|fun(query: string): table List of strings/ReferItems or a provider function
 ---@param query string The search query
 ---@param opts table Options { sorter = function, use_blink = boolean }
----@return table matches List of matching strings
+---@return ReferItem[] matches List of matching ReferItem tables
 function M.filter(items_or_provider, query, opts)
     opts = opts or {}
 
     if type(items_or_provider) == "function" then
-        return items_or_provider(query)
+        local results = items_or_provider(query)
+        return util.normalize_items(results or {})
     end
 
+    -- Normalize all inputs to ReferItem[]
+    local normalized = util.normalize_items(items_or_provider)
+
     if query == "" then
-        return items_or_provider
+        return normalized
+    end
+
+    -- Build text-only list for sorter scoring
+    local text_items = vim.tbl_map(function(item)
+        return item.text
+    end, normalized)
+
+    -- Build lookup from text back to ReferItem
+    local by_text = {}
+    for _, item in ipairs(normalized) do
+        by_text[item.text] = item
     end
 
     local sorter = opts.sorter
@@ -195,18 +212,27 @@ function M.filter(items_or_provider, query, opts)
         sorter = M.sorters[sorter]
     end
 
+    local matched_texts
     if sorter then
-        return sorter(items_or_provider, query)
+        matched_texts = sorter(text_items, query)
+    elseif opts.use_blink then
+        matched_texts = M.sorters.blink(text_items, query)
+        if not matched_texts then
+            matched_texts = M.sorters.lua(text_items, query)
+        end
+    else
+        matched_texts = M.sorters.lua(text_items, query)
     end
 
-    if opts.use_blink then
-        local matches = M.sorters.blink(items_or_provider, query)
-        if matches then
-            return matches
+    -- Map matched text strings back to ReferItem tables
+    local result = {}
+    for _, text in ipairs(matched_texts) do
+        local item = by_text[text]
+        if item then
+            table.insert(result, item)
         end
     end
-
-    return M.sorters.lua(items_or_provider, query)
+    return result
 end
 
 ---Check if Blink fuzzy matcher is available

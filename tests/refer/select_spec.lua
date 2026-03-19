@@ -35,10 +35,14 @@ describe("refer.select", function()
         local choices = args[1]
         local opts = args[3]
 
-        assert.are.same({ "Option A", "Option B" }, choices)
+        -- choices is now ReferItem[] not string[]
+        assert.are.same(2, #choices)
+        assert.are.same("Option A", choices[1].text)
+        assert.are.same("Option B", choices[2].text)
         assert.are.same("Test>", opts.prompt)
 
-        opts.on_select "Option B"
+        -- on_select receives (text, item_data) after Plan 02
+        opts.on_select("Option B", choices[2].data)
         assert.is_true(on_choice_called)
         assert.are.same(items[2], choice_item)
         assert.are.same(2, choice_idx)
@@ -52,7 +56,11 @@ describe("refer.select", function()
         local args = pick_stub.calls[1].refs
         local choices = args[1]
 
-        assert.are.same({ "foo", "bar", "foo (1)", "foo (2)" }, choices)
+        -- choices is ReferItem[] — check text fields
+        assert.are.same("foo", choices[1].text)
+        assert.are.same("bar", choices[2].text)
+        assert.are.same("foo (1)", choices[3].text)
+        assert.are.same("foo (2)", choices[4].text)
     end)
 
     it("correctly maps duplicate selection back to original item index", function()
@@ -63,9 +71,12 @@ describe("refer.select", function()
             captured_idx = idx
         end)
 
-        local opts = pick_stub.calls[1].refs[3]
+        local args = pick_stub.calls[1].refs
+        local choices = args[1]
+        local opts = args[3]
 
-        opts.on_select "foo (2)"
+        -- "foo (2)" is choices[4] — call on_select with text + data
+        opts.on_select("foo (2)", choices[4].data)
 
         assert.are.same(4, captured_idx)
     end)
@@ -105,7 +116,8 @@ describe("refer.select", function()
         local select_entry_called = false
         local builtin = {
             picker = {
-                current_matches = { "a", "b" },
+                -- current_matches now contains ReferItem tables
+                current_matches = { { text = "a", data = {} }, { text = "b", data = {} } },
                 selected_index = 2,
             },
             actions = {
@@ -131,4 +143,23 @@ describe("refer.select", function()
 
         vim.ui.select = original_select
     end)
+
+    -- New: verify item.data carries original Lua object (no lookup table needed)
+    it("item.data carries original item and index without lookup table", function()
+        local items = { { id = 10 }, { id = 20 }, { id = 30 } }
+
+        refer.select(items, { format_item = function(x) return "item-" .. x.id end }, function() end)
+
+        local choices = pick_stub.calls[1].refs[1]
+
+        -- Each choice should be a ReferItem with data.item = original and data.idx = position
+        assert.are.same(3, #choices)
+        assert.are.same(items[1], choices[1].data.item)
+        assert.are.same(1, choices[1].data.idx)
+        assert.are.same(items[2], choices[2].data.item)
+        assert.are.same(2, choices[2].data.idx)
+        assert.are.same(items[3], choices[3].data.item)
+        assert.are.same(3, choices[3].data.idx)
+    end)
 end)
+
