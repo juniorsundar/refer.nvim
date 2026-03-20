@@ -116,6 +116,7 @@ Use `:Refer <subcommand>` to launch pickers:
 | `Symbols`     | List LSP document symbols for current buffer |
 | `LspServers`  | Manage LSP servers (start/stop)              |
 | `Macros`      | Edit and preview Vim registers/macro content   |
+| `Extras FindFile` | Emacs-style filesystem picker (requires `extras.find_file = true` in setup) |
 
 ## Tutorials & Advanced Usage
 
@@ -130,6 +131,7 @@ Use `:Refer <subcommand>` to launch pickers:
   - [Async Command Picker](#async-command-picker)
   - [Enabling Previews for Custom Items](#enabling-previews-for-custom-items)
 - [Creating Extensions](#creating-extensions)
+- [Enabling Built-in Extras](#enabling-built-in-extras)
 
 ### Replacing `vim.ui.select`
 Use `refer` as the interface for `vim.ui.select` (used by code actions and
@@ -178,6 +180,11 @@ require("refer").setup({
 | `<M-d>` | `deselect_all` | Deselect all |
 | `<M-t>` | `toggle_all` | Toggle all marks |
 | `<Esc>` / `<C-c>` | `close` | Close picker |
+| — | `edit_entry` | Open selected item in current window |
+| — | `split_entry` | Open selected item in a horizontal split |
+| — | `vsplit_entry` | Open selected item in a vertical split |
+| — | `tab_entry` | Open selected item in a new tab |
+| — | `select_entry` | Call `on_select` with item and its attached data |
 
 ### Bring Your Own Fuzzy (Custom Sorters)
 You can define custom sorting algorithms. For example, a simple prefix matcher:
@@ -277,6 +284,32 @@ refer.pick(
             end
         }
     }
+)
+```
+
+#### Structured Items (`ReferItem`)
+
+Items passed to `pick()` can be plain strings **or** structured `ReferItem`
+tables of the form `{ text = string, data = any }`. When a structured item is
+selected, `data` is passed directly to your `on_select` callback — no parser
+needed.
+
+Plain strings continue to work unchanged; they are normalized automatically.
+
+```lua
+local refer = require("refer")
+
+refer.pick(
+    {
+        { text = "src/main.lua",  data = { path = "src/main.lua",  lnum = 1 } },
+        { text = "src/util.lua",  data = { path = "src/util.lua",  lnum = 1 } },
+    },
+    function(selection, data)
+        -- `selection` is the display text; `data` is the attached table
+        vim.cmd("edit " .. data.path)
+        vim.api.nvim_win_set_cursor(0, { data.lnum, 0 })
+    end,
+    { prompt = "Jump > " }
 )
 ```
 
@@ -405,6 +438,35 @@ refer.pick(
 )
 ```
 
+### Enabling Built-in Extras
+
+`refer.nvim` ships with optional extras that are disabled by default. Enable
+them via `setup()`:
+
+```lua
+require("refer").setup({
+    extras = {
+        find_file = true,
+    },
+})
+```
+
+#### `extras.find_file`
+
+> Inspired by [João Paulo](https://github.com/johnpgr).
+>
+> Link to [config](https://github.com/johnpgr/dotfiles/blob/ae2955439a43e4ed25859ca7c4da137e8e91a5a7/nvim/lua/plugins/refer.lua#L366C16-L366C46).
+
+Registers `:Refer Extras FindFile` — an Emacs-style filesystem picker. It
+opens at your current working directory and lets you navigate your filesystem
+incrementally: selecting a directory descends into it, selecting a file opens
+it.
+
+| Key | Action |
+| --- | ------ |
+| `<CR>` | Descend into directory or open file |
+| `<Esc>` / `<C-c>` | Close picker |
+
 ## Creating Extensions
 
 You can register new `:Refer` subcommands from your `init.lua` or from
@@ -473,6 +535,11 @@ require("refer").setup({
         },
     },
     
+    -- Extras (all disabled by default)
+    extras = {
+        find_file = false, -- set to true to register :Refer Extras FindFile
+    },
+
     -- See "Tutorials" section for keymaps, custom_sorters, and custom_parsers
 })
 ```
