@@ -8,7 +8,7 @@ describe("builtin.macros", function()
         buf = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_win_set_buf(0, buf)
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "hello", "world" })
-        -- Set a macro in register 'a': insert "X" at start of line
+
         vim.fn.setreg("a", "IX\27")
     end)
 
@@ -100,7 +100,6 @@ describe("builtin.macros", function()
 
         vim.schedule = original_schedule
 
-        -- Retrieve the edit_macro picker and confirm with new content
         local refer = require "refer"
         if refer._active_picker then
             refer._active_picker.opts.on_confirm "Inew\27"

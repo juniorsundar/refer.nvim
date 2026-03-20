@@ -193,9 +193,7 @@ function M.get_defaults(picker)
                 local refer_item = item_by_text[candidate]
                 local item_data = { text = candidate }
 
-                -- Prefer item.data if available, else fall back to parser
-                local parsed = (refer_item and refer_item.data)
-                    or (picker.parser and picker.parser(candidate))
+                local parsed = (refer_item and refer_item.data) or (picker.parser and picker.parser(candidate))
 
                 if parsed then
                     if parsed.filename then
@@ -211,7 +209,6 @@ function M.get_defaults(picker)
                     if parsed.content then
                         item_data.text = parsed.content
                     elseif parsed.filename and parsed.lnum then
-                        -- Fallback: try to strip the coordinate prefix from the text
                         local prefix_col = string.format("%s:%d:%d:", parsed.filename, parsed.lnum, parsed.col or 0)
                         local prefix_no_col = string.format("%s:%d:", parsed.filename, parsed.lnum)
 

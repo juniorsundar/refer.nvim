@@ -4,7 +4,7 @@ local M = {}
 
 local function split_words(text)
     local words = {}
-    for word in text:gmatch("%S+") do
+    for word in text:gmatch "%S+" do
         table.insert(words, word)
     end
     return words
@@ -32,7 +32,7 @@ end
 
 function M.dispatch(path, opts)
     if not path or #path == 0 then
-        unknown("")
+        unknown ""
         return
     end
 
@@ -67,7 +67,7 @@ function M.complete(arglead, cmdline, cursorpos)
     end
 
     local path = words
-    if line:sub(-1):match("%s") == nil then
+    if line:sub(-1):match "%s" == nil then
         path = vim.list_slice(words, 1, math.max(#words - 1, 0))
     end
 

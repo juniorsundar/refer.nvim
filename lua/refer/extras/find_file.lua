@@ -235,7 +235,8 @@ local function open_target(path)
 end
 
 local function confirm_item(selection, builtin)
-    local item = type(selection) == "table" and selection or builtin.picker.current_matches[builtin.picker.selected_index]
+    local item = type(selection) == "table" and selection
+        or builtin.picker.current_matches[builtin.picker.selected_index]
     if not item or not item.data then
         local raw = vim.api.nvim_get_current_line()
         if raw ~= "" then
@@ -247,7 +248,7 @@ local function confirm_item(selection, builtin)
 
     local data = item.data
     if data.is_dir then
-        builtin.picker.ui:update_input({ data.filename })
+        builtin.picker.ui:update_input { data.filename }
         vim.api.nvim_win_set_cursor(builtin.picker.ui.input_win, { 1, #data.filename })
         builtin.picker:refresh()
         return

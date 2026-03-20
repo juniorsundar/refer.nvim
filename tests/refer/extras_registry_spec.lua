@@ -40,7 +40,7 @@ describe("refer extras registry", function()
 
     it("enables Extras FindFile only through setup", function()
         load_plugin_commands()
-        refer.setup({ extras = { find_file = true } })
+        refer.setup { extras = { find_file = true } }
         local commands = refer.get_commands()
 
         assert.is_table(commands.Extras)
@@ -52,7 +52,7 @@ describe("refer extras registry", function()
     it("keeps default completion core-only", function()
         load_plugin_commands()
 
-        local completions = require("refer.commands").complete("", "Refer ", #("Refer "))
+        local completions = require("refer.commands").complete("", "Refer ", #"Refer ")
 
         assert.is_false(vim.tbl_contains(completions, "Extras"))
         assert.is_true(vim.tbl_contains(completions, "Files"))
@@ -61,10 +61,10 @@ describe("refer extras registry", function()
 
     it("completes the enabled extras namespace path", function()
         load_plugin_commands()
-        refer.setup({ extras = { find_file = true } })
+        refer.setup { extras = { find_file = true } }
 
-        local root = require("refer.commands").complete("", "Refer ", #("Refer "))
-        local extras = require("refer.commands").complete("", "Refer Extras ", #("Refer Extras "))
+        local root = require("refer.commands").complete("", "Refer ", #"Refer ")
+        local extras = require("refer.commands").complete("", "Refer Extras ", #"Refer Extras ")
 
         assert.is_true(vim.tbl_contains(root, "Extras"))
         assert.are.same({ "FindFile" }, extras)

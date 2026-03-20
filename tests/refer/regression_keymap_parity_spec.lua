@@ -81,12 +81,18 @@ describe("refer regression keymap parity", function()
 
         local original_buf = vim.api.nvim_get_current_buf()
 
-        picker = refer.pick({ {
-            text = file .. ":2:1:beta",
-            data = { filename = file, lnum = 2, col = 1 },
-        } }, function() end, {
-            preview = { enabled = false },
-        })
+        picker = refer.pick(
+            {
+                {
+                    text = file .. ":2:1:beta",
+                    data = { filename = file, lnum = 2, col = 1 },
+                },
+            },
+            function() end,
+            {
+                preview = { enabled = false },
+            }
+        )
 
         vim.wait(1000, function()
             return picker.current_matches and #picker.current_matches == 1

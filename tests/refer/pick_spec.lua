@@ -197,8 +197,10 @@ describe("refer.pick", function()
 
         local lines = vim.api.nvim_buf_get_lines(picker.ui.results_buf, 0, -1, false)
         -- The first line should be the text string "alpha", not a table representation
-        assert.is_true(lines[1] == "alpha" or lines[1] == "beta",
-            "Expected 'alpha' or 'beta', got: " .. tostring(lines[1]))
+        assert.is_true(
+            lines[1] == "alpha" or lines[1] == "beta",
+            "Expected 'alpha' or 'beta', got: " .. tostring(lines[1])
+        )
         -- Definitely not a table repr
         assert.is_false(vim.startswith(lines[1], "table:"))
     end)
@@ -234,8 +236,10 @@ describe("refer.pick", function()
         picker.actions.toggle_mark()
 
         -- marked should have "alpha" as key (the text string), not a table
-        assert.is_true(picker.marked["alpha"] == true or picker.marked["alpha"] == false,
-            "Expected marked key to be text string 'alpha'")
+        assert.is_true(
+            picker.marked["alpha"] == true or picker.marked["alpha"] == false,
+            "Expected marked key to be text string 'alpha'"
+        )
         -- No table key should be present
         for k, _ in pairs(picker.marked) do
             assert.are.same("string", type(k), "Expected marked keys to be strings, got: " .. type(k))

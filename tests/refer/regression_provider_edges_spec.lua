@@ -48,7 +48,7 @@ describe("refer regression provider edges", function()
 
         it("keeps Files async command generation and prompt contract", function()
             local captured = {}
-            pick_async_stub = stub(require("refer"), "pick_async", function(generator, on_select, opts)
+            pick_async_stub = stub(require "refer", "pick_async", function(generator, on_select, opts)
                 captured.generator = generator
                 captured.on_select = on_select
                 captured.opts = opts
@@ -62,7 +62,27 @@ describe("refer regression provider edges", function()
             assert.are.same("select_entry", captured.opts.keymaps["<CR>"])
 
             local plain = captured.generator "alpha"
-            assert.are.same({ "fd", "-H", "--type", "f", "--color", "never", "--exclude", ".git", "--exclude", ".jj", "--exclude", "node_modules", "--exclude", ".cache", "--", "al" }, plain)
+            assert.are.same(
+                {
+                    "fd",
+                    "-H",
+                    "--type",
+                    "f",
+                    "--color",
+                    "never",
+                    "--exclude",
+                    ".git",
+                    "--exclude",
+                    ".jj",
+                    "--exclude",
+                    "node_modules",
+                    "--exclude",
+                    ".cache",
+                    "--",
+                    "al",
+                },
+                plain
+            )
 
             local path_query = captured.generator "lua/ref"
             assert.are.same("--full-path", path_query[#path_query - 2])
@@ -73,7 +93,7 @@ describe("refer regression provider edges", function()
 
         it("keeps Grep async prompt and command contract", function()
             local captured = {}
-            pick_async_stub = stub(require("refer"), "pick_async", function(generator, on_select, opts)
+            pick_async_stub = stub(require "refer", "pick_async", function(generator, on_select, opts)
                 captured.generator = generator
                 captured.on_select = on_select
                 captured.opts = opts
@@ -103,7 +123,7 @@ describe("refer regression provider edges", function()
             end)
 
             local captured = {}
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 captured.items = items
                 captured.on_select = on_select
                 captured.opts = opts
@@ -116,7 +136,7 @@ describe("refer regression provider edges", function()
 
             system_stub = stub(vim, "system", function(cmd, opts, callback)
                 captured.cmd = cmd
-                callback({ code = 0, stdout = "a.lua:1:1:alpha\nb.lua:2:3:beta\n" })
+                callback { code = 0, stdout = "a.lua:1:1:alpha\nb.lua:2:3:beta\n" }
             end)
 
             files.grep_word()
@@ -149,7 +169,7 @@ describe("refer regression provider edges", function()
             end)
 
             local captured = {}
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 captured.items = items
                 captured.opts = opts
                 return {
@@ -161,7 +181,7 @@ describe("refer regression provider edges", function()
 
             system_stub = stub(vim, "system", function(cmd, opts, callback)
                 captured.cmd = cmd
-                callback({ code = 1, stdout = "", stderr = "" })
+                callback { code = 1, stdout = "", stderr = "" }
             end)
 
             files.grep_word()
@@ -207,7 +227,7 @@ describe("refer regression provider edges", function()
             end)
 
             local captured = {}
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 captured.items = items
                 captured.opts = opts
                 return {
@@ -218,7 +238,7 @@ describe("refer regression provider edges", function()
             end)
 
             system_stub = stub(vim, "system", function(cmd, opts, callback)
-                callback({ code = 2, stdout = "", stderr = "permission denied" })
+                callback { code = 2, stdout = "", stderr = "permission denied" }
             end)
 
             files.grep_word()
@@ -245,7 +265,7 @@ describe("refer regression provider edges", function()
         local lsp_stop_stub
 
         after_each(function()
-            for _, s in ipairs({
+            for _, s in ipairs {
                 get_clients_stub,
                 make_position_params_stub,
                 buf_request_stub,
@@ -254,7 +274,7 @@ describe("refer regression provider edges", function()
                 runtime_file_stub,
                 lsp_start_stub,
                 lsp_stop_stub,
-            }) do
+            } do
                 if s then
                     s:revert()
                 end
@@ -266,14 +286,16 @@ describe("refer regression provider edges", function()
                 if filter and filter.name == "lua_ls" then
                     return { { id = 9, name = "lua_ls" } }
                 end
-                return { {
-                    id = 9,
-                    name = "lua_ls",
-                    offset_encoding = "utf-16",
-                    supports_method = function(_, method)
-                        return method == "textDocument/documentSymbol"
-                    end,
-                } }
+                return {
+                    {
+                        id = 9,
+                        name = "lua_ls",
+                        offset_encoding = "utf-16",
+                        supports_method = function(_, method)
+                            return method == "textDocument/documentSymbol"
+                        end,
+                    },
+                }
             end)
             make_position_params_stub = stub(vim.lsp.util, "make_position_params", function()
                 return { textDocument = { uri = "file:///tmp/example.lua" }, position = { line = 0, character = 0 } }
@@ -317,7 +339,7 @@ describe("refer regression provider edges", function()
 
         it("opens a picker when an LSP request returns multiple results", function()
             stub_single_client()
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 assert.are.same("LSP References > ", opts.prompt)
                 assert.are.same("select_entry", opts.keymaps["<CR>"])
                 assert.are.same(2, #items)
@@ -379,7 +401,7 @@ describe("refer regression provider edges", function()
             vim.lsp._enabled_configs = {}
 
             local picker
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 picker = { items = items, on_select = on_select, opts = opts }
                 return picker
             end)
@@ -409,7 +431,7 @@ describe("refer regression provider edges", function()
             }
 
             local picker
-            pick_stub = stub(require("refer"), "pick", function(items, on_select, opts)
+            pick_stub = stub(require "refer", "pick", function(items, on_select, opts)
                 picker = { items = items, on_select = on_select, opts = opts }
                 return picker
             end)
@@ -421,5 +443,4 @@ describe("refer regression provider edges", function()
             assert.stub(vim.notify).was_called_with("Started LSP: lua_ls", vim.log.levels.INFO)
         end)
     end)
-
 end)

@@ -51,7 +51,7 @@ describe("refer extras find_file", function()
     local function open_find_file(opts)
         opts = opts or {}
         load_plugin_commands()
-        refer.setup({ extras = { find_file = true } })
+        refer.setup { extras = { find_file = true } }
 
         vim.api.nvim_cmd({ cmd = "Refer", args = { "Extras", "FindFile" } }, {})
 
@@ -99,7 +99,7 @@ describe("refer extras find_file", function()
 
     it("opens the opt-in extra without replacing core Files", function()
         load_plugin_commands()
-        refer.setup({ extras = { find_file = true } })
+        refer.setup { extras = { find_file = true } }
         local commands = refer.get_commands()
 
         assert.is_function(commands.Files)
@@ -116,7 +116,7 @@ describe("refer extras find_file", function()
         local file_path = temp_dir .. "/alpha.txt"
         write_file(file_path, { "hello world" })
 
-        local picker = open_find_file({ path = temp_dir })
+        local picker = open_find_file { path = temp_dir }
         local item = find_item(picker, function(candidate)
             return candidate.data and candidate.data.filename == file_path
         end)
@@ -132,7 +132,7 @@ describe("refer extras find_file", function()
 
     it("offers a create candidate for a missing path and opens it on confirm", function()
         local missing_path = temp_dir .. "/notes/new-file.md"
-        local picker = open_find_file({ path = temp_dir })
+        local picker = open_find_file { path = temp_dir }
 
         vim.api.nvim_set_current_line(missing_path)
         picker:refresh()
@@ -157,7 +157,7 @@ describe("refer extras find_file", function()
         mkdirp(nested_dir)
         write_file(nested_file, { "guide" })
 
-        local picker = open_find_file({ path = temp_dir })
+        local picker = open_find_file { path = temp_dir }
         local item, index = find_item(picker, function(candidate)
             return candidate.data and candidate.data.filename == nested_dir
         end)

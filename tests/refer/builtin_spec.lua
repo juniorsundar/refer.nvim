@@ -88,7 +88,6 @@ describe("builtin.commands history cycling", function()
     it("handles the specific long entry bug scenario", function()
         picker = builtin.commands()
 
-        -- Cycle to "lua print..."
         trigger_key "<C-p>"
         trigger_key "<C-p>"
         assert.are.same("lua print('very long command that caused issues')", get_input())

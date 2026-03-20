@@ -88,7 +88,6 @@ function M.complete_line(input, selection)
     local prefix = input:match "^(.*[%s%.%/:\\\\])" or ""
     local tail_start = #prefix + 1
 
-    -- Check for overlap between end of input and start of selection
     for i = 0, #input - 1 do
         local suffix_start = i + 1
         local suffix = input:sub(suffix_start)

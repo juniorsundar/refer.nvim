@@ -59,14 +59,14 @@ describe("refer extras loading", function()
         local calls = {}
         package.preload["refer.extras.find_file"] = function()
             return {
-            run = function(opts)
-                table.insert(calls, opts)
-            end,
+                run = function(opts)
+                    table.insert(calls, opts)
+                end,
             }
         end
 
         load_plugin_commands()
-        refer.setup({ extras = { find_file = true } })
+        refer.setup { extras = { find_file = true } }
         local commands = refer.get_commands()
 
         assert.is_nil(package.loaded["refer.extras.find_file"])

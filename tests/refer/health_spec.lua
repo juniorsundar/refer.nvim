@@ -99,8 +99,18 @@ describe("refer.health", function()
         health = load_health()
         health.check()
 
-        assert.is_true(vim.tbl_contains(messages "warn", "fd/fdfind not found. File picker will not work unless configured manually."))
-        assert.is_true(vim.tbl_contains(messages "warn", "ripgrep (rg) not found. Grep picker will not work unless configured manually."))
+        assert.is_true(
+            vim.tbl_contains(
+                messages "warn",
+                "fd/fdfind not found. File picker will not work unless configured manually."
+            )
+        )
+        assert.is_true(
+            vim.tbl_contains(
+                messages "warn",
+                "ripgrep (rg) not found. Grep picker will not work unless configured manually."
+            )
+        )
         assert.is_true(vim.tbl_contains(messages "error", "Files command 'fd' is not executable"))
         assert.is_true(vim.tbl_contains(messages "error", "Grep command 'rg' is not executable"))
     end)

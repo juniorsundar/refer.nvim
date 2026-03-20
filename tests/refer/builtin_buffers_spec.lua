@@ -127,7 +127,8 @@ describe("builtin.old_files", function()
         picker = builtin.old_files()
 
         assert.is_true(#picker.items_or_provider >= 1)
-        local first_text = type(picker.items_or_provider[1]) == "table" and picker.items_or_provider[1].text or picker.items_or_provider[1]
+        local first_text = type(picker.items_or_provider[1]) == "table" and picker.items_or_provider[1].text
+            or picker.items_or_provider[1]
         assert.are.same(file, first_text)
     end)
 

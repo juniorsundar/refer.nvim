@@ -443,7 +443,8 @@ function Picker:navigate(delta)
     self.selected_index = new_idx
 
     local selected_item = self.current_matches[new_idx]
-    local selected_text = (selected_item and type(selected_item) == "table") and selected_item.text or (selected_item or "")
+    local selected_text = (selected_item and type(selected_item) == "table") and selected_item.text
+        or (selected_item or "")
     local count_str = string.format("%d/%d ", new_idx, total)
 
     local fast_ok = self.ui:update_selection(old_idx, new_idx, total, selected_text, count_str)

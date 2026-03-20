@@ -82,7 +82,8 @@ describe("refer.bulk_actions", function()
         picker.ui:render(picker.current_matches, picker.selected_index, picker.marked)
         picker.actions.toggle_mark()
 
-        local marks = vim.api.nvim_buf_get_extmarks(picker.ui.results_buf, picker.ui.ns_marks, 0, -1, { details = true })
+        local marks =
+            vim.api.nvim_buf_get_extmarks(picker.ui.results_buf, picker.ui.ns_marks, 0, -1, { details = true })
 
         assert.is_true(#marks > 0)
         assert.are.same("● ", marks[1][4].sign_text)

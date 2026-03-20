@@ -195,10 +195,10 @@ describe("refer regression builtin surface", function()
             assert.are.same(2, picker.selected_index)
 
             local target = picker.current_matches[picker.selected_index]
-            assert.is_truthy(target.text:find("buffer%-one%.lua") or target.text:find("buffer%-two%.lua"))
+            assert.is_truthy(target.text:find "buffer%-one%.lua" or target.text:find "buffer%-two%.lua")
 
             picker.actions.select_entry()
-            assert.is_true(vim.api.nvim_buf_get_name(0):find("buffer%-%a+%.lua") ~= nil)
+            assert.is_true(vim.api.nvim_buf_get_name(0):find "buffer%-%a+%.lua" ~= nil)
         end)
 
         it("keeps OldFiles behavior for results, confirm, and empty state", function()

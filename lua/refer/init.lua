@@ -184,7 +184,7 @@ function M.select(items, opts, on_choice)
     opts = opts or {}
 
     local choices = {}
-    local seen_texts = {}  -- for dedup collision detection only
+    local seen_texts = {}
 
     local format_item = opts.format_item or tostring
 
@@ -206,7 +206,6 @@ function M.select(items, opts, on_choice)
 
     local selected = false
 
-    -- After Plan 02, picker.on_select is called as on_select(item.text, item.data)
     local function on_select(selection_text, item_data)
         if item_data then
             selected = true

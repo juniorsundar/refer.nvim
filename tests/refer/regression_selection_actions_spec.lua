@@ -23,12 +23,16 @@ describe("refer regression selection actions", function()
     end
 
     local function open_picker(items, opts)
-        picker = refer.pick(items, function(selection, data)
-            require("refer.util").jump_to_location(selection, data)
-        end, vim.tbl_deep_extend("force", {
-            prompt = "Regression > ",
-            parser = require("refer.util").parsers.grep,
-        }, opts or {}))
+        picker = refer.pick(
+            items,
+            function(selection, data)
+                require("refer.util").jump_to_location(selection, data)
+            end,
+            vim.tbl_deep_extend("force", {
+                prompt = "Regression > ",
+                parser = require("refer.util").parsers.grep,
+            }, opts or {})
+        )
         vim.wait(1000, function()
             return picker.current_matches and #picker.current_matches == #items
         end)
@@ -49,7 +53,7 @@ describe("refer regression selection actions", function()
     end)
 
     it("keeps normal next and prev navigation semantics", function()
-        open_picker({ "one", "two", "three" })
+        open_picker { "one", "two", "three" }
 
         assert.are.same(1, picker.selected_index)
         picker.actions.next_item()
@@ -73,7 +77,7 @@ describe("refer regression selection actions", function()
         write_file(file, { "alpha", "beta", "gamma" })
         vim.cmd("edit " .. vim.fn.fnameescape(file))
 
-        open_picker({ make_location(file, 2, 1, "beta") })
+        open_picker { make_location(file, 2, 1, "beta") }
         picker.actions.edit_entry()
 
         assert.are.same(file, vim.api.nvim_buf_get_name(0))
@@ -86,7 +90,7 @@ describe("refer regression selection actions", function()
         vim.cmd("edit " .. vim.fn.fnameescape(file))
         local initial_windows = #vim.api.nvim_list_wins()
 
-        open_picker({ make_location(file, 2, 1, "beta") })
+        open_picker { make_location(file, 2, 1, "beta") }
         picker.actions.split_entry()
 
         assert.are.same(initial_windows + 1, #vim.api.nvim_list_wins())
@@ -100,7 +104,7 @@ describe("refer regression selection actions", function()
         vim.cmd("edit " .. vim.fn.fnameescape(file))
         local initial_windows = #vim.api.nvim_list_wins()
 
-        open_picker({ make_location(file, 1, 1, "alpha") })
+        open_picker { make_location(file, 1, 1, "alpha") }
         picker.actions.vsplit_entry()
 
         assert.are.same(initial_windows + 1, #vim.api.nvim_list_wins())
@@ -114,7 +118,7 @@ describe("refer regression selection actions", function()
         vim.cmd("edit " .. vim.fn.fnameescape(file))
         local initial_tabs = #vim.api.nvim_list_tabpages()
 
-        open_picker({ make_location(file, 2, 1, "beta") })
+        open_picker { make_location(file, 2, 1, "beta") }
         picker.actions.tab_entry()
 
         assert.are.same(initial_tabs + 1, #vim.api.nvim_list_tabpages())
@@ -130,7 +134,7 @@ describe("refer regression selection actions", function()
         local original_buf = vim.api.nvim_get_current_buf()
         local original_tab_count = #vim.api.nvim_list_tabpages()
 
-        open_picker({})
+        open_picker {}
         local picker_win_count = #vim.api.nvim_list_wins()
         picker.current_matches = {}
         picker.selected_index = 1
