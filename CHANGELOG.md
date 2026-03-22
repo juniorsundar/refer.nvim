@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.6.0](https://github.com/juniorsundar/refer.nvim/compare/v0.5.0...v0.6.0) (2026-03-22)
+
+
+### Features
+
+* **actions:** Open multiple marked, and delete multiple marked buffers ([ea70c94](https://github.com/juniorsundar/refer.nvim/commit/ea70c94f3eb04218790c8a5d60bb5c1af04132b7))
+* **extras:** Implement Emacs-like find-file ([fad45d9](https://github.com/juniorsundar/refer.nvim/commit/fad45d9abb8009cae1fab9d2a2af8fbfc9fe9f7e))
+
+
+### Bug Fixes
+
+* **buffers:** Kill buffer delay reduced ([af3ae35](https://github.com/juniorsundar/refer.nvim/commit/af3ae358a0c878ceadc43c4401184f5ee75d32e1))
+* **highlight:** Clear line highlight from real & preview buffers ([f14f01f](https://github.com/juniorsundar/refer.nvim/commit/f14f01f43d7f65ffada41f0ee90d111874d1ce98))
+* **preview:** guard against nil line on OOR lnum ([ddf64ea](https://github.com/juniorsundar/refer.nvim/commit/ddf64eac7ece2720d6d55606548805e4426484bb))
+
+
+### Documentation
+
+* Update README.md ([8147e2a](https://github.com/juniorsundar/refer.nvim/commit/8147e2acab4596d899c5a21b2bd09f2ac020dc52))
+
+
+### Code Refactoring
+
+* **core:** introduce ReferItem structured item model ([af44caa](https://github.com/juniorsundar/refer.nvim/commit/af44caab6da9d4616e307672e8b92d5087d55085))
+
+
+### Performance Improvements
+
+* **ui:** add partial redraw diffing ([7e6e06f](https://github.com/juniorsundar/refer.nvim/commit/7e6e06fceaeffe50dffb6bbf828e3d98c2f0f654))
+
 ## [0.5.0](https://github.com/juniorsundar/refer.nvim/compare/v0.4.0...v0.5.0) (2026-03-17)
 
 
