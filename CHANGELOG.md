@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.1](https://github.com/juniorsundar/refer.nvim/compare/v0.6.0...v0.6.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* LSP client `supports_method` support for v0.12/v0.11 ([14d3953](https://github.com/juniorsundar/refer.nvim/commit/14d39530bae669540e36115392a739c3dcafd62c))
+* **lsp:** documentSymbols when multiple servers are attached ([#13](https://github.com/juniorsundar/refer.nvim/issues/13)) ([5f707e4](https://github.com/juniorsundar/refer.nvim/commit/5f707e49ee605b76c3a8b5a1c5364b82b77eb97e))
+* **preview:** Handle preview if file not found ([73799b9](https://github.com/juniorsundar/refer.nvim/commit/73799b9c11fdba119ddc3c420260ea6f5916ae47))
+* **ui:** Custom sign/statuscolumn interferin w/ marker ([ede7fea](https://github.com/juniorsundar/refer.nvim/commit/ede7fea42c5d8e596f3c9e429b11f513c7716d77))
+
+
+### Tests
+
+* Update for ([#13](https://github.com/juniorsundar/refer.nvim/issues/13)) ([d86dfa4](https://github.com/juniorsundar/refer.nvim/commit/d86dfa4b7a26821334ae89568ac80b56c3788f91))
+
 ## [0.6.0](https://github.com/juniorsundar/refer.nvim/compare/v0.5.0...v0.6.0) (2026-03-22)
 
 
