@@ -289,7 +289,7 @@ describe("refer regression provider edges", function()
                         name = "lua_ls",
                         offset_encoding = "utf-16",
                         supports_method = function(_, method)
-                            return method == "textDocument/documentSymbol"
+                            return method ~= nil
                         end,
                     },
                 }
@@ -368,6 +368,55 @@ describe("refer regression provider edges", function()
             lsp.document_symbols()
 
             assert.stub(vim.notify).was_called_with("Refer: No LSP client attached", vim.log.levels.WARN)
+        end)
+
+        it("selects the correct client when multiple LSP clients are attached", function()
+            local captured_method
+            get_clients_stub = stub(vim.lsp, "get_clients", function()
+                return {
+                    {
+                        id = 1,
+                        name = "tsserver",
+                        supports_method = function(_, method)
+                            return method == "textDocument/definition" or method == "textDocument/references"
+                        end,
+                    },
+                    {
+                        id = 2,
+                        name = "lua_ls",
+                        supports_method = function(_, method)
+                            return method == "textDocument/documentSymbol"
+                        end,
+                    },
+                    {
+                        id = 3,
+                        name = "rust_analyzer",
+                        supports_method = function(_, method)
+                            return false
+                        end,
+                    },
+                }
+            end)
+
+            buf_request_stub = stub(vim.lsp, "buf_request", function(bufnr, method, params, callback)
+                captured_method = method
+                callback(nil, {
+                    {
+                        name = "my_function",
+                        kind = 12,
+                        selectionRange = {
+                            start = { line = 5, character = 0 },
+                            ["end"] = { line = 5, character = 11 },
+                        },
+                        children = {},
+                    },
+                }, nil, nil)
+            end)
+
+            lsp.document_symbols()
+
+            assert.are_equal("textDocument/documentSymbol", captured_method)
+            assert.stub(buf_request_stub).was_called(1)
         end)
 
         it("warns when no LSP configurations are available", function()
