@@ -12,7 +12,13 @@ local util = require "refer.util"
 ---@param param_modifier fun(params: table)|nil Optional function to modify request params
 local function lsp_request(method, label, title, opts, param_modifier)
     local clients = vim.lsp.get_clients { bufnr = 0 }
-    local client = clients[1]
+    local client = nil
+    for _, c in ipairs(clients) do
+        if c:supports_method(method) then
+            client = c
+            break
+        end
+    end
 
     if not client then
         vim.notify("Refer: No LSP client attached", vim.log.levels.WARN)
@@ -148,7 +154,13 @@ local kind_icons = {
 ---Displays a hierarchical list of symbols with icons and navigates to selection
 function M.document_symbols(opts)
     local clients = vim.lsp.get_clients { bufnr = 0 }
-    local client = clients[1]
+    local client = nil
+    for _, c in ipairs(clients) do
+        if c:supports_method "textDocument/documentSymbol" then
+            client = c
+            break
+        end
+    end
 
     if not client then
         vim.notify("Refer: No LSP client attached", vim.log.levels.WARN)

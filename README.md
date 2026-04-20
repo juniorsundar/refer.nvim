@@ -36,18 +36,18 @@ https://github.com/user-attachments/assets/5b7be64e-e3f1-43c3-83d7-27c69b796cd1
 It is designed to:
 
 - **Be intuitive:** It shouldn't pull you out of your current context and meld in
-  seamlessly with your workflow.  
+  seamlessly with your workflow.
 - **Be clean:** Minimalist UI without floating windows and noise, a lot like
-  Emacs minibuffers.  
+  Emacs minibuffers.
 - **Integrate:** With other plugins (use the fuzzy sorter used in your at-point
-  completion in your selecter).  
+  completion in your selecter).
 - **Functionally hackable:** While there is limited flexibility in the picker's
-  aesthetics, it is functionally hackable in every way.  
+  aesthetics, it is functionally hackable in every way.
 
 It is not designed to:
 
 - **Be "blazingly fast":** Speed is relative. This is, in essense, a picker
-  plugin. I am not developing a super-fast fuzzy sorter.  
+  plugin. I am not developing a super-fast fuzzy sorter.
 
 ## Features
 
@@ -60,13 +60,13 @@ There are already some sorters registered:
 
 - **Blink:** Rust-based, extremely fast (Default for static lists) (Requires
   `blink.cmp` installed. Or else it will download just the library from
-  GitHub.).  
-- **Native:** Vim's `matchfuzzy` (Vim is generous... `:h matchfuzzy()`.).  
+  GitHub.).
+- **Native:** Vim's `matchfuzzy` (Vim is generous... `:h matchfuzzy()`.).
 - **Mini:** Support for `mini.fuzzy` if installed (This supports strings with
-  spaces in them, unlike the above two options.).  
+  spaces in them, unlike the above two options.).
 - **Lua:** Pure Lua fallback (Default for async file lists) (I kept this for
   posterity's sake. Its by no means the most optimal option. Also supports
-  strings with spaces in them.).  
+  strings with spaces in them.).
 
 ## Requirements
 
@@ -84,8 +84,8 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
     "juniorsundar/refer.nvim",
     dependencies = {
         -- Optional:
-        -- "saghen/blink.cmp", 
-        -- "nvim-mini/mini.fuzzy", 
+        -- "saghen/blink.cmp",
+        -- "nvim-mini/mini.fuzzy",
     },
     config = function()
         -- The plugin autoloads, but you can pass opts to setup.
@@ -357,7 +357,7 @@ refer.pick(
     {
         prompt = "Navigate > ",
         preview = { enabled = true },
-        
+
         -- Custom parser for "row:col:filename"
         parser = function(selection)
             local lnum, col, filename = selection:match("^(%d+):(%d+):(.+)$")
@@ -422,7 +422,7 @@ refer.pick(
     {
         prompt = "Outline > ",
         preview = { enabled = true },
-        
+
         parser = function(selection)
             local lnum = lookup[selection]
             if lnum then
@@ -495,14 +495,14 @@ require("refer").setup({
     -- General Settings
     max_height_percent = 0.4, -- Window height (0.1 - 1.0)
     min_height = 1,           -- Minimum lines
-    
+
     -- Async Settings
     debounce_ms = 100,        -- Delay for async searching
     min_query_len = 2,        -- Min chars to start async search
 
     -- Sorting
     available_sorters = { "blink", "mini", "native", "lua" },
-    default_sorter = "blink", 
+    default_sorter = "blink",
 
     -- Preview Settings
     preview = {
@@ -520,7 +520,7 @@ require("refer").setup({
         highlights = {
             prompt = "Title",
             selection = "Visual",
-            header = "WarningMsg", 
+            header = "WarningMsg",
         },
     },
 
@@ -534,7 +534,7 @@ require("refer").setup({
             grep_command = { "rg", "--vimgrep", "--smart-case" },
         },
     },
-    
+
     -- Extras (all disabled by default)
     extras = {
         find_file = false, -- set to true to register :Refer Extras FindFile

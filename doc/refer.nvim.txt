@@ -101,8 +101,8 @@ Using lazy.nvim <https://github.com/folke/lazy.nvim>:
         "juniorsundar/refer.nvim",
         dependencies = {
             -- Optional:
-            -- "saghen/blink.cmp", 
-            -- "nvim-mini/mini.fuzzy", 
+            -- "saghen/blink.cmp",
+            -- "nvim-mini/mini.fuzzy",
         },
         config = function()
             -- The plugin autoloads, but you can pass opts to setup.
@@ -188,10 +188,10 @@ You can customize key bindings inside the picker window.
         keymaps = {
             -- Bind to a built-in action name
             ["<C-x>"] = "close",
-    
+
             -- Bind to a built-in action with a description
             ["<C-z>"] = { action = "close", desc = "Close picker" },
-    
+
             -- Or use a custom function (desc is optional)
             ["<C-y>"] = function(selection, builtin)
                  print("You selected: " .. selection)
@@ -211,10 +211,10 @@ You can customize key bindings inside the picker window.
   <CR>       select_input          Confirm selection
 
   <C-n> /    next_item             Next item
-  <Down>                           
+  <Down>
 
   <C-p> /    prev_item             Previous item
-  <Up>                             
+  <Up>
 
   <C-v>      toggle_preview        Toggle preview
 
@@ -235,7 +235,7 @@ You can customize key bindings inside the picker window.
   <M-t>      toggle_all            Toggle all marks
 
   <Esc> /    close                 Close picker
-  <C-c>                            
+  <C-c>
 
   —          edit_entry            Open selected item in current window
 
@@ -343,7 +343,7 @@ STATIC LIST PICKER
 
 >lua
     local refer = require("refer")
-    
+
     refer.pick(
         { "Option A", "Option B", "Option C" },
         function(item)
@@ -374,7 +374,7 @@ Plain strings continue to work unchanged; they are normalized automatically.
 
 >lua
     local refer = require("refer")
-    
+
     refer.pick(
         {
             { text = "src/main.lua",  data = { path = "src/main.lua",  lnum = 1 } },
@@ -396,7 +396,7 @@ Create a picker that runs a shell command based on your query (e.g., `locate`).
 
 >lua
     local refer = require("refer")
-    
+
     refer.pick_async(
         function(query)
             -- Return the command to run as a table of strings
@@ -437,7 +437,7 @@ so the built-in file previewer works.
         {
             prompt = "Navigate > ",
             preview = { enabled = true },
-            
+
             -- Custom parser for "row:col:filename"
             parser = function(selection)
                 local lnum, col, filename = selection:match("^(%d+):(%d+):(.+)$")
@@ -466,18 +466,18 @@ heading is found.
 >lua
     local refer = require("refer")
     local api = vim.api
-    
+
     if vim.bo.filetype ~= "markdown" then
         return
     end
-    
+
     local bufnr = api.nvim_get_current_buf()
     local filename = api.nvim_buf_get_name(bufnr)
     local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    
+
     local choices = {}
     local lookup = {}
-    
+
     for lnum, line in ipairs(lines) do
         local hashes, title = line:match("^(#+)%s+(.+)$")
         if hashes then
@@ -490,7 +490,7 @@ heading is found.
             end
         end
     end
-    
+
     refer.pick(
         choices,
         function(selection)
@@ -502,7 +502,7 @@ heading is found.
         {
             prompt = "Outline > ",
             preview = { enabled = true },
-            
+
             parser = function(selection)
                 local lnum = lookup[selection]
                 if lnum then
@@ -556,7 +556,7 @@ third-party plugins.
 
 >lua
     local refer = require("refer")
-    
+
     refer.add_command("MyPicker", function(opts)
         refer.pick({ "Choice A", "Choice B" }, function(selection)
             print("Selected: " .. selection)
@@ -578,21 +578,21 @@ The default configuration with all available options:
         -- General Settings
         max_height_percent = 0.4, -- Window height (0.1 - 1.0)
         min_height = 1,           -- Minimum lines
-        
+
         -- Async Settings
         debounce_ms = 100,        -- Delay for async searching
         min_query_len = 2,        -- Min chars to start async search
-    
+
         -- Sorting
         available_sorters = { "blink", "mini", "native", "lua" },
-        default_sorter = "blink", 
-    
+        default_sorter = "blink",
+
         -- Preview Settings
         preview = {
             enabled = true,
             max_lines = 1000,
         },
-    
+
         -- UI Customization
         ui = {
             mark_char = "●",
@@ -603,10 +603,10 @@ The default configuration with all available options:
             highlights = {
                 prompt = "Title",
                 selection = "Visual",
-                header = "WarningMsg", 
+                header = "WarningMsg",
             },
         },
-    
+
         -- Provider Configuration
         providers = {
             files = {
@@ -617,12 +617,12 @@ The default configuration with all available options:
                 grep_command = { "rg", "--vimgrep", "--smart-case" },
             },
         },
-        
+
         -- Extras (all disabled by default)
         extras = {
             find_file = false, -- set to true to register :Refer Extras FindFile
         },
-    
+
         -- See "Tutorials" section for keymaps, custom_sorters, and custom_parsers
     })
 <
