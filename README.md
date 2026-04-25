@@ -109,6 +109,7 @@ Use `:Refer <subcommand>` to launch pickers:
 | `Buffers`     | Switch between open buffers                  |
 | `OldFiles`    | Browse recently opened files                 |
 | `Commands`    | Execute Vim commands interactively           |
+| `Help`        | Search Vim help tags and jump to documentation |
 | `References`  | List LSP references for symbol under cursor  |
 | `Definitions` | Go to LSP definition for symbol under cursor |
 | `Implementations` | Go to LSP implementation for symbol under cursor |
