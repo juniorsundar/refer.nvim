@@ -45,6 +45,7 @@ describe("refer regression builtin surface", function()
             old_files = record "builtin.old_files",
             commands = record "builtin.commands",
             macros = record "builtin.macros",
+            help_tags = record "builtin.help_tags",
         }
         package.loaded["refer.providers.files"] = {
             files = record "files.files",
@@ -65,6 +66,7 @@ describe("refer regression builtin surface", function()
         local expected = {
             Buffers = "builtin.buffers",
             Commands = "builtin.commands",
+            Help = "builtin.help_tags",
             Declarations = "lsp.declarations",
             Definitions = "lsp.definitions",
             Files = "files.files",
@@ -85,6 +87,7 @@ describe("refer regression builtin surface", function()
             "Definitions",
             "Files",
             "Grep",
+            "Help",
             "Implementations",
             "Lines",
             "LspServers",
