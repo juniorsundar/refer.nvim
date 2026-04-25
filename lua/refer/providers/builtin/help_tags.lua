@@ -1,5 +1,7 @@
 local refer = require "refer"
 
+-- ACKNOWLEDGMENT: This is heavily inspired by https://github.com/johnpgr/dotfiles/blob/ae2955439a43e4ed25859ca7c4da137e8e91a5a7/nvim/lua/plugins/refer.lua#L959-L1043
+
 ---Collect tag files for the configured help languages.
 ---@return string[] langs Ordered list of languages to search.
 ---@return table<string, string[]> tag_files Map of language to its tag files.
