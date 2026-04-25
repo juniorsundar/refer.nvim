@@ -116,6 +116,7 @@ Use `:Refer <subcommand>` to launch pickers:
 | `Symbols`     | List LSP document symbols for current buffer |
 | `LspServers`  | Manage LSP servers (start/stop)              |
 | `Macros`      | Edit and preview Vim registers/macro content   |
+| `Help`        | Search Vim help tags and jump to documentation |
 | `Extras FindFile` | Emacs-style filesystem picker (requires `extras.find_file = true` in setup) |
 
 ## Tutorials & Advanced Usage
