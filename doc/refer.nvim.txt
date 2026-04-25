@@ -1,5 +1,5 @@
 *refer.nvim.txt*
-                            For Neovim >= 0.10.0    Last change: 2026 April 20
+                            For Neovim >= 0.10.0    Last change: 2026 April 25
 
 ==============================================================================
 Table of Contents                               *refer.nvim-table-of-contents*
@@ -135,6 +135,8 @@ Use `:Refer <subcommand>` to launch pickers:
   OldFiles          Browse recently opened files
 
   Commands          Execute Vim commands interactively
+
+  Help              Search Vim help tags and jump to documentation
 
   References        List LSP references for symbol under cursor
 
