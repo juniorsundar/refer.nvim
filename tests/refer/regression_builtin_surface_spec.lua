@@ -94,6 +94,7 @@ describe("refer regression builtin surface", function()
             "Macros",
             "OldFiles",
             "References",
+            "Resume",
             "Selection",
             "Symbols",
         }

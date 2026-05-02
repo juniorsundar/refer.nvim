@@ -6,6 +6,36 @@ local M = {}
 ---@type table<string, function|table> The central registry of subcommands
 M._registry = {}
 
+---@class ResumePickerState
+---@field kind string The picker kind: "pick" or "pick_async"
+---@field items_or_provider any The items table or provider function
+---@field on_select function|nil The on_select callback
+---@field opts table The options passed to the picker (sanitized)
+---@field query string|nil The last query typed in the input
+
+---@type ResumePickerState|nil State of the most recently launched picker
+local resume_picker_state = nil
+
+---Attach an internal resume-capture hook onto opts without touching opts.on_close
+---@param kind string Either "pick" or "pick_async"
+---@param items_or_provider any The items or provider
+---@param on_select function|nil The on_select callback
+---@param opts table The live options table (will have _refer_resume_capture added)
+local function prepare_resume_picker(kind, items_or_provider, on_select, opts)
+    local saved_opts = vim.deepcopy(opts)
+    saved_opts._refer_resume_capture = nil
+
+    opts._refer_resume_capture = function(query)
+        resume_picker_state = {
+            kind = kind,
+            items_or_provider = items_or_provider,
+            on_select = on_select,
+            opts = saved_opts,
+            query = query or "",
+        }
+    end
+end
+
 ---Register a new subcommand for :Refer
 ---@param name string|string[] The command name or path (e.g., "GitStatus" or { "Extras", "FindFile" })
 ---@param fn function The function to execute when the command is run
@@ -151,6 +181,10 @@ function M.pick(items_or_provider, on_select, opts)
         opts.on_select = on_select
     end
 
+    if not opts._refer_internal then
+        prepare_resume_picker("pick", items_or_provider, on_select, opts)
+    end
+
     local picker = Picker.new(items_or_provider, opts)
     picker:show()
     return picker
@@ -167,9 +201,34 @@ function M.pick_async(command_generator, on_select, opts)
         opts.on_select = on_select
     end
 
+    if not opts._refer_internal then
+        prepare_resume_picker("pick_async", command_generator, on_select, opts)
+    end
+
     local picker = Picker.new_async(command_generator, opts)
     picker:show()
     return picker
+end
+
+---Resume the most recently launched picker, restoring its previous query
+---@return Picker|nil picker The picker instance or nil if there is no last picker
+function M.pick_resume()
+    if not resume_picker_state then
+        vim.notify("Refer: Could not run the command again - no previous picker", vim.log.levels.ERROR)
+        return nil
+    end
+
+    local state = resume_picker_state
+    local opts = vim.tbl_deep_extend("force", {}, state.opts or {})
+    opts._refer_resume_capture = nil
+    if state.query ~= nil then
+        opts.default_text = state.query
+    end
+
+    if state.kind == "pick_async" then
+        return M.pick_async(state.items_or_provider, state.on_select, opts)
+    end
+    return M.pick(state.items_or_provider, state.on_select, opts)
 end
 
 ---Use refer as the UI for vim.ui.select
@@ -223,6 +282,7 @@ function M.select(items, opts, on_choice)
         prompt = opts.prompt or "Select: ",
         on_select = on_select,
         on_close = on_close,
+        _refer_internal = true,
         keymaps = {
             ["<CR>"] = function(_, builtin)
                 local selection = builtin.picker.current_matches[builtin.picker.selected_index]

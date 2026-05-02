@@ -45,6 +45,8 @@ local actions = require "refer.actions"
 ---@field debounce_ms? number Async debounce time in ms (default: 100)
 ---@field min_query_len? number Async minimum query length (default: 2)
 ---@field default_text? string Initial text in the prompt
+---@field _refer_resume_capture? fun(query: string) Internal-only hook to capture state when picker closes
+---@field _refer_internal? boolean Internal-only flag to exclude from resume capture
 
 ---@class Picker
 ---@field items_or_provider table|fun(query: string): table
@@ -311,6 +313,16 @@ function Picker:show()
     end
 end
 
+---Get the current input query from the picker's input buffer
+---@return string query The query text (may be empty)
+function Picker:get_query()
+    if self.input_buf and api.nvim_buf_is_valid(self.input_buf) then
+        local lines = api.nvim_buf_get_lines(self.input_buf, 0, 1, false)
+        return lines[1] or ""
+    end
+    return ""
+end
+
 ---Close the picker and clean up resources
 function Picker:close()
     if self.debounce_timer then
@@ -328,8 +340,18 @@ function Picker:close()
         return
     end
 
-    if self.opts.on_close then
-        self.opts.on_close()
+    if not self._callbacks_fired then
+        self._callbacks_fired = true
+
+        local closing_query = self:get_query()
+
+        if self.opts._refer_resume_capture then
+            self.opts._refer_resume_capture(closing_query)
+        end
+
+        if self.opts.on_close then
+            self.opts.on_close()
+        end
     end
 
     if api.nvim_win_is_valid(self.original_win) and api.nvim_buf_is_valid(self.original_buf) then
