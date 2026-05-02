@@ -38,27 +38,8 @@ describe("refer.pick_resume", function()
         picker:close()
         vim.wait(50)
 
-        -- Capture notifications
-        local notified = {}
-        local original_notify = vim.notify
-        vim.notify = function(msg, level)
-            table.insert(notified, { msg = msg or "", level = level })
-        end
-
         -- Rerun
         picker = refer.pick_resume()
-
-        vim.notify = original_notify
-
-        -- Should have notified about rerunning
-        local has_rerun_msg = false
-        for _, n in ipairs(notified) do
-            if n.msg:match "Rerunning" then
-                has_rerun_msg = true
-                break
-            end
-        end
-        assert.is_true(has_rerun_msg)
 
         -- The new picker should exist
         assert.is_not_nil(picker)
@@ -101,5 +82,64 @@ describe("refer.pick_resume", function()
         -- The rerun should have x as default text from the original pick
         local lines = vim.api.nvim_buf_get_lines(picker.input_buf, 0, -1, false)
         assert.equals("x", lines[1])
+    end)
+
+    it("preserves original on_close across repeated resumes", function()
+        local close_count = 0
+        local items = { "foo", "bar", "baz" }
+
+        picker = refer.pick(items, function() end, {
+            on_close = function()
+                close_count = close_count + 1
+            end,
+        })
+        vim.wait(200)
+
+        picker:close()
+        vim.wait(50)
+        assert.equals(1, close_count)
+
+        local original_notify = vim.notify
+        vim.notify = function() end
+        picker = refer.pick_resume()
+        vim.notify = original_notify
+        assert.is_not_nil(picker)
+        vim.wait(100)
+        picker:close()
+        vim.wait(50)
+        assert.equals(2, close_count)
+
+        vim.notify = function() end
+        picker = refer.pick_resume()
+        vim.notify = original_notify
+        assert.is_not_nil(picker)
+        vim.wait(100)
+        picker:close()
+        vim.wait(50)
+        assert.equals(3, close_count)
+    end)
+
+    it("restores empty query correctly on resume", function()
+        local items = { "alpha", "beta", "gamma" }
+
+        picker = refer.pick(items, function() end, { default_text = "abc" })
+        vim.wait(200)
+
+        vim.api.nvim_buf_set_lines(picker.input_buf, 0, -1, false, { "" })
+        picker:refresh()
+        vim.wait(100)
+
+        picker:close()
+        vim.wait(50)
+
+        local original_notify = vim.notify
+        vim.notify = function() end
+        picker = refer.pick_resume()
+        vim.notify = original_notify
+
+        assert.is_not_nil(picker)
+
+        local lines = vim.api.nvim_buf_get_lines(picker.input_buf, 0, -1, false)
+        assert.equals("", lines[1])
     end)
 end)

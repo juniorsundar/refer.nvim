@@ -16,37 +16,24 @@ M._registry = {}
 ---@type ResumePickerState|nil State of the most recently launched picker
 local resume_picker_state = nil
 
----Wrap opts to capture the picker's query when it closes
+---Attach an internal resume-capture hook onto opts without touching opts.on_close
 ---@param kind string Either "pick" or "pick_async"
 ---@param items_or_provider any The items or provider
 ---@param on_select function|nil The on_select callback
----@param opts table The options table (will be modified)
----@return table opts The same opts with on_close wrapped
-local function capture_resume_picker(kind, items_or_provider, on_select, opts)
-    local original_on_close = opts.on_close
+---@param opts table The live options table (will have _refer_resume_capture added)
+local function prepare_resume_picker(kind, items_or_provider, on_select, opts)
+    local saved_opts = vim.deepcopy(opts)
+    saved_opts._refer_resume_capture = nil
 
-    opts.on_close = function()
-        local picker = Picker.get_active()
-        local query = nil
-        if picker and picker.input_buf and vim.api.nvim_buf_is_valid(picker.input_buf) then
-            local lines = vim.api.nvim_buf_get_lines(picker.input_buf, 0, 1, false)
-            query = lines[1] or ""
-        end
-
+    opts._refer_resume_capture = function(query)
         resume_picker_state = {
             kind = kind,
             items_or_provider = items_or_provider,
             on_select = on_select,
-            opts = opts,
-            query = query,
+            opts = saved_opts,
+            query = query or "",
         }
-
-        if original_on_close then
-            original_on_close()
-        end
     end
-
-    return opts
 end
 
 ---Register a new subcommand for :Refer
@@ -195,7 +182,7 @@ function M.pick(items_or_provider, on_select, opts)
     end
 
     if not opts._refer_internal then
-        opts = capture_resume_picker("pick", items_or_provider, on_select, opts)
+        prepare_resume_picker("pick", items_or_provider, on_select, opts)
     end
 
     local picker = Picker.new(items_or_provider, opts)
@@ -215,7 +202,7 @@ function M.pick_async(command_generator, on_select, opts)
     end
 
     if not opts._refer_internal then
-        opts = capture_resume_picker("pick_async", command_generator, on_select, opts)
+        prepare_resume_picker("pick_async", command_generator, on_select, opts)
     end
 
     local picker = Picker.new_async(command_generator, opts)
@@ -231,14 +218,10 @@ function M.pick_resume()
         return nil
     end
 
-    vim.notify("Refer: Rerunning the last picker...", vim.log.levels.INFO)
-
     local state = resume_picker_state
     local opts = vim.tbl_deep_extend("force", {}, state.opts or {})
-    -- Avoid carrying the previous on_close wrapper; let capture_resume_picker
-    -- re-wrap a fresh version on this run so we keep capturing query updates.
-    opts.on_close = nil
-    if state.query and state.query ~= "" then
+    opts._refer_resume_capture = nil
+    if state.query ~= nil then
         opts.default_text = state.query
     end
 
