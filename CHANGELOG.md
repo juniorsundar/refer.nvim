@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/juniorsundar/refer.nvim/compare/v0.6.1...v0.7.0) (2026-05-10)
+
+
+### Features
+
+* add Resume picker to restore picker & query ([#14](https://github.com/juniorsundar/refer.nvim/issues/14)) ([1ff1fb1](https://github.com/juniorsundar/refer.nvim/commit/1ff1fb1036b24095576cb732728678fd0e1e50f5))
+* **builtin:** add Help-tags picker ([#16](https://github.com/juniorsundar/refer.nvim/issues/16)) ([a843f8a](https://github.com/juniorsundar/refer.nvim/commit/a843f8a26c1af95b81e83acdf37997297bc340ad))
+
+
+### Bug Fixes
+
+* **commands:** Jump to line-number works now ([aabd4f1](https://github.com/juniorsundar/refer.nvim/commit/aabd4f13c3d2e19e5e6d7b24f2aa9d83a8e96e2f))
+
 ## [0.6.1](https://github.com/juniorsundar/refer.nvim/compare/v0.6.0...v0.6.1) (2026-04-20)
 
 
