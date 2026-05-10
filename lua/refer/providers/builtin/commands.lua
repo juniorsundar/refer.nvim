@@ -1,5 +1,38 @@
 local refer = require "refer"
 
+local function is_bare_address(input)
+    return input:match "^%d+$" or input == "%" or input == "." or input == "$"
+end
+
+local function complete_cmdline(input)
+    if input == "" then
+        return vim.fn.getcompletion("", "command")
+    end
+
+    local matches = vim.fn.getcompletion(input, "cmdline")
+    if #matches == 0 and is_bare_address(input) then
+        return { input }
+    end
+
+    local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
+    if prefix then
+        local remainder = input:sub(#prefix + 1)
+        if not remainder:match "[%s%.%/:\\\\]" then
+            local new_matches = {}
+            for _, m in ipairs(matches) do
+                if not vim.startswith(m, prefix) then
+                    table.insert(new_matches, prefix .. m)
+                else
+                    table.insert(new_matches, m)
+                end
+            end
+            return new_matches
+        end
+    end
+
+    return matches
+end
+
 ---Open command picker (like M-x in Emacs)
 ---Shows all available vim commands with completion
 local function commands(opts)
@@ -137,26 +170,7 @@ local function commands(opts)
 
     return refer.pick(
         function(input)
-            if input == "" then
-                return vim.fn.getcompletion("", "command")
-            end
-            local matches = vim.fn.getcompletion(input, "cmdline")
-            local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
-            if prefix then
-                local remainder = input:sub(#prefix + 1)
-                if not remainder:match "[%s%.%/:\\\\]" then
-                    local new_matches = {}
-                    for _, m in ipairs(matches) do
-                        if not vim.startswith(m, prefix) then
-                            table.insert(new_matches, prefix .. m)
-                        else
-                            table.insert(new_matches, m)
-                        end
-                    end
-                    return new_matches
-                end
-            end
-            return matches
+            return complete_cmdline(input)
         end,
         function(input_text)
             cleanup_preview()
@@ -177,28 +191,7 @@ local function commands(opts)
             on_change = function(input, update_ui_callback)
                 do_sub_preview(input)
 
-                local matches
-                if input == "" then
-                    matches = vim.fn.getcompletion("", "command")
-                else
-                    matches = vim.fn.getcompletion(input, "cmdline")
-                    local prefix = input:match "^'[<a-z],'[>a-z]" or input:match "^%d+,%d+"
-                    if prefix then
-                        local remainder = input:sub(#prefix + 1)
-                        if not remainder:match "[%s%.%/:\\\\]" then
-                            local new_matches = {}
-                            for _, m in ipairs(matches) do
-                                if not vim.startswith(m, prefix) then
-                                    table.insert(new_matches, prefix .. m)
-                                else
-                                    table.insert(new_matches, m)
-                                end
-                            end
-                            matches = new_matches
-                        end
-                    end
-                end
-                update_ui_callback(matches)
+                update_ui_callback(complete_cmdline(input))
             end,
             on_close = function()
                 cleanup_preview()

@@ -38,4 +38,25 @@ describe("builtin.commands completion", function()
         s_getcompletion:revert()
         s_pick:revert()
     end)
+
+    it("keeps bare Ex addresses as executable candidates", function()
+        local s_getcompletion = stub(vim.fn, "getcompletion")
+        s_getcompletion.on_call_with("32", "cmdline").returns {}
+        s_getcompletion.on_call_with("%", "cmdline").returns {}
+        s_getcompletion.on_call_with(".", "cmdline").returns {}
+        s_getcompletion.on_call_with("$", "cmdline").returns {}
+
+        local s_pick = stub(refer, "pick")
+        builtin.commands()
+
+        local provider = s_pick.calls[1].refs[1]
+
+        assert.are.same({ "32" }, provider "32")
+        assert.are.same({ "%" }, provider "%")
+        assert.are.same({ "." }, provider ".")
+        assert.are.same({ "$" }, provider "$")
+
+        s_getcompletion:revert()
+        s_pick:revert()
+    end)
 end)
