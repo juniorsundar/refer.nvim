@@ -175,14 +175,12 @@ local function commands(opts)
         function(input_text)
             cleanup_preview()
             vim.fn.histadd("cmd", input_text)
-            vim.schedule(function()
-                local ok, result = pcall(vim.api.nvim_exec2, input_text, { output = true })
-                if not ok then
-                    vim.notify(tostring(result), vim.log.levels.ERROR)
-                elseif result and result.output and vim.trim(result.output) ~= "" then
-                    vim.notify(vim.trim(result.output), vim.log.levels.INFO)
-                end
-            end)
+            local ok, result = pcall(vim.api.nvim_exec2, input_text, { output = true })
+            if not ok then
+                vim.notify(tostring(result), vim.log.levels.ERROR)
+            elseif result and result.output and vim.trim(result.output) ~= "" then
+                vim.notify(vim.trim(result.output), vim.log.levels.INFO)
+            end
         end,
         vim.tbl_deep_extend("force", {
             prompt = "M-x > ",
