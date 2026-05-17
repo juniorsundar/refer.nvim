@@ -1,7 +1,7 @@
 ---@class BlinkModule
 local M = {}
 
-local VERSION = "v1.9.1"
+local VERSION = "v1.10.2"
 local BASE_URL = "https://github.com/Saghen/blink.cmp/releases/download"
 
 ---@type boolean Whether the module has been loaded
