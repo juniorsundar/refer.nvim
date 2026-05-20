@@ -189,6 +189,29 @@ function M.filter(items_or_provider, query, opts)
         return util.normalize_items(results or {})
     end
 
+    local sorter = opts.sorter
+    if type(sorter) == "string" then
+        sorter = M.sorters[sorter]
+    end
+
+    if type(items_or_provider[1]) == "string" then
+        local matched_texts
+        if query == "" then
+            matched_texts = items_or_provider
+        elseif sorter then
+            matched_texts = sorter(items_or_provider, query)
+        elseif opts.use_blink then
+            matched_texts = M.sorters.blink(items_or_provider, query)
+            if not matched_texts then
+                matched_texts = M.sorters.lua(items_or_provider, query)
+            end
+        else
+            matched_texts = M.sorters.lua(items_or_provider, query)
+        end
+
+        return util.normalize_items(matched_texts or {})
+    end
+
     -- Normalize all inputs to ReferItem[]
     local normalized = util.normalize_items(items_or_provider)
 
@@ -205,11 +228,6 @@ function M.filter(items_or_provider, query, opts)
     local by_text = {}
     for _, item in ipairs(normalized) do
         by_text[item.text] = item
-    end
-
-    local sorter = opts.sorter
-    if type(sorter) == "string" then
-        sorter = M.sorters[sorter]
     end
 
     local matched_texts

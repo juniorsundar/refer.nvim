@@ -73,6 +73,46 @@ local actions = require "refer.actions"
 local Picker = {}
 Picker.__index = Picker
 
+local function clear_table(tbl)
+    for key in pairs(tbl) do
+        tbl[key] = nil
+    end
+end
+
+local malloc_trim_declared = false
+
+local function gc_trim_once()
+    collectgarbage "collect"
+
+    if vim.loop.os_uname().sysname ~= "Linux" then
+        return
+    end
+
+    local ok, ffi = pcall(require, "ffi")
+    if not ok then
+        return
+    end
+
+    pcall(function()
+        if not malloc_trim_declared then
+            ffi.cdef "int malloc_trim(size_t pad);"
+            malloc_trim_declared = true
+        end
+        ffi.C.malloc_trim(0)
+    end)
+end
+
+local function schedule_gc_trim_pass(delay_ms)
+    vim.defer_fn(gc_trim_once, delay_ms)
+end
+
+local function schedule_gc_trim()
+    schedule_gc_trim_pass(0)
+    schedule_gc_trim_pass(250)
+    schedule_gc_trim_pass(1000)
+    schedule_gc_trim_pass(2500)
+end
+
 ---@type Picker|nil Currently active picker instance
 local active_picker = nil
 
@@ -181,15 +221,20 @@ function Picker.new_async(command_generator, opts)
     local debounce_ms = opts.debounce_ms or 100
     local min_query_len = opts.min_query_len or 2
     local post_process = opts.post_process
+    opts._refer_async_picker = true
 
     local current_job = nil
     local async_timer = nil
     local stream_render_timer = nil
+    local current_output_lines = nil
+    local current_job_done = false
     local stream_gen = 0
 
     local function cleanup()
         if current_job then
-            current_job:kill(15)
+            pcall(function()
+                current_job:kill(15)
+            end)
             current_job = nil
         end
         if async_timer then
@@ -202,6 +247,11 @@ function Picker.new_async(command_generator, opts)
             stream_render_timer:close()
             stream_render_timer = nil
         end
+        if current_output_lines then
+            clear_table(current_output_lines)
+            current_output_lines = nil
+        end
+        current_job_done = false
         stream_gen = stream_gen + 1
     end
 
@@ -241,6 +291,13 @@ function Picker.new_async(command_generator, opts)
                 stream_gen = stream_gen + 1
                 local my_gen = stream_gen
                 local output_lines = {}
+                local pending_stdout = ""
+                current_output_lines = output_lines
+                current_job_done = false
+
+                if not post_process then
+                    output_lines._refer_normalized = true
+                end
 
                 if stream_render_timer then
                     stream_render_timer:stop()
@@ -249,18 +306,64 @@ function Picker.new_async(command_generator, opts)
                 end
 
                 local this_job
+                local function append_line(line)
+                    if line == "" then
+                        return
+                    end
+
+                    if post_process then
+                        table.insert(output_lines, line)
+                    else
+                        table.insert(output_lines, { text = line })
+                    end
+                end
+
+                local function consume_stdout(data)
+                    pending_stdout = pending_stdout .. data
+                    while true do
+                        local newline = pending_stdout:find("\n", 1, true)
+                        if not newline then
+                            break
+                        end
+
+                        local line = pending_stdout:sub(1, newline - 1)
+                        pending_stdout = pending_stdout:sub(newline + 1)
+                        append_line(line)
+                    end
+                end
+
+                local function flush_stdout()
+                    if pending_stdout ~= "" then
+                        append_line(pending_stdout)
+                        pending_stdout = ""
+                    end
+                end
+
+                local on_exit = function()
+                    if my_gen ~= stream_gen or current_output_lines ~= output_lines then
+                        return
+                    end
+                    if current_job and current_job ~= this_job then
+                        return
+                    end
+                    flush_stdout()
+                    current_job_done = true
+                end
 
                 this_job = vim.system(cmd, {
                     text = true,
                     stdout = function(_, data)
+                        if my_gen ~= stream_gen or current_output_lines ~= output_lines then
+                            return
+                        end
+                        if current_job and current_job ~= this_job then
+                            return
+                        end
                         if data then
-                            local lines = vim.split(data, "\n", { trimempty = true })
-                            for _, line in ipairs(lines) do
-                                table.insert(output_lines, line)
-                            end
+                            consume_stdout(data)
                         end
                     end,
-                })
+                }, on_exit)
                 current_job = this_job
 
                 stream_render_timer = vim.uv.new_timer()
@@ -271,7 +374,10 @@ function Picker.new_async(command_generator, opts)
                         if my_gen ~= stream_gen then
                             return
                         end
-                        if current_job ~= this_job then
+                        if current_job and current_job ~= this_job then
+                            return
+                        end
+                        if current_output_lines ~= output_lines then
                             return
                         end
                         local matches = output_lines
@@ -279,6 +385,22 @@ function Picker.new_async(command_generator, opts)
                             matches = post_process(output_lines, query)
                         end
                         update_ui_callback(matches)
+
+                        if current_job_done then
+                            if stream_render_timer then
+                                stream_render_timer:stop()
+                                stream_render_timer:close()
+                                stream_render_timer = nil
+                            end
+                            if current_output_lines == output_lines then
+                                if post_process then
+                                    clear_table(output_lines)
+                                end
+                                current_output_lines = nil
+                            end
+                            current_job = nil
+                            current_job_done = false
+                        end
                     end)
                 )
             end)
@@ -372,6 +494,10 @@ function Picker:close()
     self.current_matches = nil
     self.items_or_provider = nil
     self.marked = nil
+
+    if self.opts._refer_async_picker then
+        schedule_gc_trim()
+    end
 end
 
 ---Cancel picker and restore original state
@@ -514,7 +640,11 @@ function Picker:refresh(force)
                         return
                     end
 
-                    self.current_matches = util.normalize_items(matches or {})
+                    if matches and matches._refer_normalized then
+                        self.current_matches = matches
+                    else
+                        self.current_matches = util.normalize_items(matches or {})
+                    end
                     if first_render then
                         self.selected_index = 1
                         first_render = false
