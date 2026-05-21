@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.1](https://github.com/juniorsundar/refer.nvim/compare/v0.7.0...v0.7.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* **commands:** Sometimes vim closing functions were being interrupted by "Press ENTER..." ([25c3cd0](https://github.com/juniorsundar/refer.nvim/commit/25c3cd04caffd811e5209d10a4585a664089eac6))
+
+
+### Performance Improvements
+
+* More aggressive gc on async picker close ([60825dc](https://github.com/juniorsundar/refer.nvim/commit/60825dc2515f5a7f58755118cfc9921013d47fa8))
+
+
+### Tests
+
+* **commands:** Change to nvim_exec2 required changes to test stubs ([bc91990](https://github.com/juniorsundar/refer.nvim/commit/bc91990061ce7610bd1d7a828745e281b1254715))
+
 ## [0.7.0](https://github.com/juniorsundar/refer.nvim/compare/v0.6.1...v0.7.0) (2026-05-10)
 
 
