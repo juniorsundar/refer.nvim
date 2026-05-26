@@ -1,6 +1,7 @@
 local api = vim.api
 local util = require "refer.util"
 local fuzzy = require "refer.fuzzy"
+local frecency = require "refer.frecency"
 
 local M = {}
 
@@ -18,7 +19,25 @@ function M.get_defaults(picker)
         return selection, data
     end
 
+    ---@param item ReferItem|nil
+    local function record_frecency(item)
+        if not item then
+            return
+        end
+        local frec_opts = picker.opts.frecency
+        if not frec_opts or not frec_opts.provider or frec_opts.enabled == false then
+            return
+        end
+        local key = frecency.resolve_key(item, frec_opts.key_strategy or "text")
+        if key then
+            frecency.record(frec_opts.provider, key)
+        end
+    end
+
     local function open_entry(cmd)
+        local item = picker.current_matches[picker.selected_index]
+        record_frecency(item)
+
         local selection, data = get_selection_data()
         if not selection then
             return
@@ -73,6 +92,17 @@ function M.get_defaults(picker)
 
         select_input = function()
             local current_input = api.nvim_get_current_line()
+
+            if current_input ~= "" then
+                for _, item in ipairs(picker.current_matches) do
+                    local text = type(item) == "table" and item.text or item
+                    if text == current_input then
+                        record_frecency(item)
+                        break
+                    end
+                end
+            end
+
             picker:close()
 
             if picker.on_select and current_input ~= "" then
@@ -81,6 +111,9 @@ function M.get_defaults(picker)
         end,
 
         select_entry = function()
+            local item = picker.current_matches[picker.selected_index]
+            record_frecency(item)
+
             local selection, data = get_selection_data()
             if not selection then
                 return
@@ -102,6 +135,11 @@ function M.get_defaults(picker)
             if #marked_items == 0 then
                 picker.actions.select_entry()
                 return
+            end
+
+            -- Record frecency for each marked item before close
+            for _, item in ipairs(marked_items) do
+                record_frecency(item)
             end
 
             picker:close()
@@ -262,6 +300,7 @@ function M.get_defaults(picker)
         cycle_sorter = function()
             picker.sorter_idx = (picker.sorter_idx % #picker.available_sorters) + 1
             local name = picker.available_sorters[picker.sorter_idx]
+            picker.sorter_name = name
             picker.opts.sorter = fuzzy.sorters[name]
             picker.custom_sorter = fuzzy.sorters[name]
 
