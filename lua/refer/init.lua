@@ -161,6 +161,9 @@ function M.setup(opts)
         default_opts.extras = vim.deepcopy(opts.extras)
     end
     require("refer.extras").setup(default_opts.extras)
+    if opts.frecency then
+        require("refer.frecency").configure(opts.frecency)
+    end
 end
 
 ---Get combined options
