@@ -2,6 +2,7 @@ local api = vim.api
 local util = require "refer.util"
 local UI = require "refer.ui"
 local fuzzy = require "refer.fuzzy"
+local frecency = require "refer.frecency"
 local preview = require "refer.preview"
 local actions = require "refer.actions"
 
@@ -47,6 +48,7 @@ local actions = require "refer.actions"
 ---@field default_text? string Initial text in the prompt
 ---@field _refer_resume_capture? fun(query: string) Internal-only hook to capture state when picker closes
 ---@field _refer_internal? boolean Internal-only flag to exclude from resume capture
+---@field frecency? { provider?: string, key_strategy?: string|fun(item: ReferItem): string, enabled?: boolean } Frecency options for this picker
 
 ---@class Picker
 ---@field items_or_provider table|fun(query: string): table
@@ -57,6 +59,7 @@ local actions = require "refer.actions"
 ---@field original_cursor number[]
 ---@field available_sorters table<string>
 ---@field sorter_idx number
+---@field sorter_name string
 ---@field custom_sorter fun(items: table, query: string): table|string|nil
 ---@field parser fun(selection: string): SelectionData|nil|nil
 ---@field use_blink boolean
@@ -166,6 +169,7 @@ function Picker.new(items_or_provider, opts)
     self.available_sorters = self.opts.available_sorters or { "blink", "mini", "native", "lua" }
 
     local default_sorter = self.opts.default_sorter or "blink"
+    self.sorter_name = default_sorter
     self.sorter_idx = 1
     for i, name in ipairs(self.available_sorters) do
         if name == default_sorter then
@@ -179,6 +183,18 @@ function Picker.new(items_or_provider, opts)
         local name = self.available_sorters[self.sorter_idx]
         if name ~= "blink" then
             self.custom_sorter = fuzzy.sorters[name]
+        end
+    else
+        -- Resolve sorter_name from explicitly provided sorter
+        if type(self.opts.sorter) == "string" then
+            self.sorter_name = self.opts.sorter
+        else
+            for name, fn in pairs(fuzzy.sorters) do
+                if fn == self.opts.sorter then
+                    self.sorter_name = name
+                    break
+                end
+            end
         end
     end
 
@@ -654,10 +670,27 @@ function Picker:refresh(force)
                 return
             end
 
-            self.current_matches = fuzzy.filter(self.items_or_provider, input, {
+            local matches, fuzzy_scores = fuzzy.filter(self.items_or_provider, input, {
                 sorter = self.custom_sorter,
                 use_blink = self.use_blink,
             })
+
+            local frec_opts = self.opts.frecency
+            if
+                frecency.is_enabled()
+                and self.sorter_name == "lua"
+                and frec_opts
+                and frec_opts.provider
+                and frec_opts.enabled ~= false
+                and frecency.is_available()
+            then
+                matches = frecency.reorder(frec_opts.provider, matches, {
+                    scores = fuzzy_scores,
+                    key_strategy = frec_opts.key_strategy or "text",
+                })
+            end
+
+            self.current_matches = matches
 
             self.selected_index = 1
             self:render()
