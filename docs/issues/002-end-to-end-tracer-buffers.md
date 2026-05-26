@@ -1,5 +1,7 @@
 # Issue 2: End-to-end tracer — buffers with Frecency
 
+> **Status: ✅ Complete** — All 20 acceptance criteria verified (35 test suites, 332 tests, 0 failures)
+
 ### Parent
 
 PRD: `docs/prd/frecency-enhanced-lua-sorting.md`
@@ -40,25 +42,25 @@ After this slice, a user can: open the buffers picker with the `lua` sorter acti
 
 ### Acceptance criteria
 
-- [ ] Picker tracks the active sorter by name (`self.sorter_name`) on initialization and on `cycle_sorter`; resolves `default_sorter`, string opts, and registered custom sorters correctly
-- [ ] The `lua` sorter path in `fuzzy.filter` preserves numeric fuzzy scores as a map (keyed by item text) when the `lua` sorter is active; other sorter paths return items without scores
-- [ ] `ReferOptions` accepts a `frecency` option group with `provider`, `key_strategy`, and `enabled` fields
-- [ ] `setup()` accepts a global `frecency` config with `enabled`, `db_path`, `buckets`, and `neighborhood_size`
-- [ ] When `lua` sorter is active, Provider identity is present, and Frecency is enabled, `fuzzy.filter` applies Frecency reordering after sorting
-- [ ] When any condition is not met (non-lua sorter including default `blink`, no Provider identity, global disable, per-provider disable), filter behaves exactly as before — no reordering
-- [ ] `select_entry`, `edit_entry`, `split_entry`, `vsplit_entry`, `tab_entry` call `frecency.record()` with the Provider identity and resolved key **before** `picker:close()`
-- [ ] `open_marked` calls `frecency.record()` for each marked ReferItem **before** `picker:close()`
-- [ ] `select_input` records only when the input exactly matches a ReferItem's `text` field in `current_matches`; arbitrary typed text that doesn't match does not record
-- [ ] Navigation and UI actions (`complete_selection`, `refresh`, `toggle_mark`, `close`, `select_all`, `deselect_all`, `toggle_all`, `send_to_qf`, `send_to_grep`, `cycle_sorter`, `toggle_preview`, `scroll_preview_up`, `scroll_preview_down`) do not record
-- [ ] No recording happens when Provider identity is absent, `frecency.enabled` is false per-provider, or Frecency is in no-op/unavailable mode
-- [ ] Buffers provider passes `frecency = { provider = "buffers", key_strategy = "filepath" }` and buffer items have absolute paths in `data.filename`
-- [ ] Selecting a buffer, reopening the picker with the `lua` sorter active, and searching for it shows the selected buffer ranked higher
-- [ ] An empty buffers picker query with the `lua` sorter active shows frecent buffers first
-- [ ] Cycling the sorter away from `lua` disables Frecency reordering; cycling back to `lua` re-enables it
-- [ ] Two ReferItems with the same `text` but different `data.filename` remain distinct through Lua filtering and Frecency reordering (filepath strategy resolves different keys)
-- [ ] When Frecency is in no-op mode (persistence failure), the buffers picker still selects and reorders normally with no crashes or errors
-- [ ] Existing tests for fuzzy sorting, picker behavior, and actions still pass
-- [ ] New tests cover: sorter name tracking (initial name, cycling, custom sorter names), score exposure (lua path returns scores, non-luapaths omit them), reorder activation/deactivation, action recording (including recording before close), buffers Provider Frecency wiring, no-op mode integration
+- [x] Picker tracks the active sorter by name (`self.sorter_name`) on initialization and on `cycle_sorter`; resolves `default_sorter`, string opts, and registered custom sorters correctly
+- [x] The `lua` sorter path in `fuzzy.filter` preserves numeric fuzzy scores as a map (keyed by item text) when the `lua` sorter is active; other sorter paths return items without scores
+- [x] `ReferOptions` accepts a `frecency` option group with `provider`, `key_strategy`, and `enabled` fields
+- [x] `setup()` accepts a global `frecency` config with `enabled`, `db_path`, `buckets`, and `neighborhood_size`
+- [x] When `lua` sorter is active, Provider identity is present, and Frecency is enabled, `fuzzy.filter` applies Frecency reordering after sorting
+- [x] When any condition is not met (non-lua sorter including default `blink`, no Provider identity, global disable, per-provider disable), filter behaves exactly as before — no reordering
+- [x] `select_entry`, `edit_entry`, `split_entry`, `vsplit_entry`, `tab_entry` call `frecency.record()` with the Provider identity and resolved key **before** `picker:close()`
+- [x] `open_marked` calls `frecency.record()` for each marked ReferItem **before** `picker:close()`
+- [x] `select_input` records only when the input exactly matches a ReferItem's `text` field in `current_matches`; arbitrary typed text that doesn't match does not record
+- [x] Navigation and UI actions (`complete_selection`, `refresh`, `toggle_mark`, `close`, `select_all`, `deselect_all`, `toggle_all`, `send_to_qf`, `send_to_grep`, `cycle_sorter`, `toggle_preview`, `scroll_preview_up`, `scroll_preview_down`) do not record
+- [x] No recording happens when Provider identity is absent, `frecency.enabled` is false per-provider, or Frecency is in no-op/unavailable mode
+- [x] Buffers provider passes `frecency = { provider = "buffers", key_strategy = "filepath" }` and buffer items have absolute paths in `data.filename`
+- [x] Selecting a buffer, reopening the picker with the `lua` sorter active, and searching for it shows the selected buffer ranked higher
+- [x] An empty buffers picker query with the `lua` sorter active shows frecent buffers first
+- [x] Cycling the sorter away from `lua` disables Frecency reordering; cycling back to `lua` re-enables it
+- [x] Two ReferItems with the same `text` but different `data.filename` remain distinct through Lua filtering and Frecency reordering (filepath strategy resolves different keys)
+- [x] When Frecency is in no-op mode (persistence failure), the buffers picker still selects and reorders normally with no crashes or errors
+- [x] Existing tests for fuzzy sorting, picker behavior, and actions still pass
+- [x] New tests cover: sorter name tracking (initial name, cycling, custom sorter names), score exposure (lua path returns scores, non-luapaths omit them), reorder activation/deactivation, action recording (including recording before close), buffers Provider Frecency wiring, no-op mode integration
 
 ### Blocked by
 
