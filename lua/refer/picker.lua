@@ -245,6 +245,7 @@ function Picker.new_async(command_generator, opts)
     local current_output_lines = nil
     local current_job_done = false
     local stream_gen = 0
+    local picker -- assigned after Picker.new, used in stream_render for sorter_name
 
     local function cleanup()
         if current_job then
@@ -398,7 +399,8 @@ function Picker.new_async(command_generator, opts)
                         end
                         local matches = output_lines
                         if post_process then
-                            matches = post_process(output_lines, query)
+                            local sorter_name = picker and picker.sorter_name or opts.default_sorter or "lua"
+                            matches = post_process(output_lines, query, sorter_name)
                         end
                         update_ui_callback(matches)
 
@@ -423,7 +425,8 @@ function Picker.new_async(command_generator, opts)
         )
     end
 
-    return Picker.new({}, opts)
+    picker = Picker.new({}, opts)
+    return picker
 end
 
 ---Show the picker UI

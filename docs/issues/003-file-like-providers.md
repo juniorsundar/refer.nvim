@@ -22,20 +22,20 @@ All ranking acceptance criteria assume the `lua` sorter is active. Under the def
 
 ### Acceptance criteria
 
-- [ ] `old_files` provider passes `frecency = { provider = "old_files", key_strategy = "filepath" }`
-- [ ] `old_files` items have `data.filename` set to absolute file paths (normalized via `vim.fn.fnamemodify(path, ":p")`)
-- [ ] Selecting an old file records Frecency for that file; reopening with `lua` sorter active shows it ranked higher
-- [ ] `files` provider passes `frecency = { provider = "files", key_strategy = "filepath" }`
-- [ ] `files` async `post_process` converts `fd` output to ReferItems with absolute `data.filename` (normalized via `vim.fn.fnamemodify(path, ":p")`) before filtering/reordering
-- [ ] `files` async `post_process` passes frecency options and active sorter name to `fuzzy.filter`/`frecency.reorder` so Frecency applies only when the `lua` sorter is active
-- [ ] Frecency reordering applies to `files` results as they arrive (async post-process path) when the `lua` sorter is active
-- [ ] Frecency does NOT apply to `files` results when a non-`lua` sorter is active (blink, mini, native, or custom)
-- [ ] Empty-query `files` picker shows frecent files first — conditional on `min_query_len = 0` being configured; under default `min_query_len = 2`, this criterion does not apply
-- [ ] Selecting a file records Frecency; subsequent searches with `lua` sorter active rank it higher
-- [ ] Frecency keys for the same file reached from `buffers`, `old_files`, and `files` accumulate independently (per-Provider isolation)
-- [ ] Same absolute file selected via `old_files` does not affect `buffers` or `files` frecency, and vice versa
-- [ ] `live_grep`, `grep_word`, and `lines` providers remain without Provider identity and do not participate in Frecency
-- [ ] Existing tests still pass; new tests cover: old_files Frecency wiring, files async post-process Frecency path, files ReferItem absolute-path normalization, per-Provider isolation across buffers/old_files/files, non-luapath no-reordering for files
+- [x] `old_files` provider passes `frecency = { provider = "old_files", key_strategy = "filepath" }`
+- [x] `old_files` items have `data.filename` set to absolute file paths (normalized via `vim.fn.fnamemodify(path, ":p")`)
+- [x] Selecting an old file records Frecency for that file; reopening with `lua` sorter active shows it ranked higher
+- [x] `files` provider passes `frecency = { provider = "files", key_strategy = "filepath" }`
+- [x] `files` async `post_process` converts `fd` output to ReferItems with absolute `data.filename` (normalized via `vim.fn.fnamemodify(path, ":p")`) before filtering/reordering
+- [x] `files` async `post_process` passes frecency options and active sorter name to `fuzzy.filter`/`frecency.reorder` so Frecency applies only when the `lua` sorter is active
+- [x] Frecency reordering applies to `files` results as they arrive (async post-process path) when the `lua` sorter is active
+- [x] Frecency does NOT apply to `files` results when a non-`lua` sorter is active (blink, mini, native, or custom)
+- [x] Empty-query `files` picker shows frecent files first — conditional on `min_query_len = 0` being configured; under default `min_query_len = 2`, this criterion does not apply
+- [x] Selecting a file records Frecency; subsequent searches with `lua` sorter active rank it higher
+- [x] Frecency keys for the same file reached from `buffers`, `old_files`, and `files` accumulate independently (per-Provider isolation)
+- [x] Same absolute file selected via `old_files` does not affect `buffers` or `files` frecency, and vice versa
+- [x] `live_grep`, `grep_word`, and `lines` providers remain without Provider identity and do not participate in Frecency
+- [x] Existing tests still pass; new tests cover: old_files Frecency wiring, files async post-process Frecency path, files ReferItem absolute-path normalization, per-Provider isolation across buffers/old_files/files, non-luapath no-reordering for files
 
 ### Blocked by
 

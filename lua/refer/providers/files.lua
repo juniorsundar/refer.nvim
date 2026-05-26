@@ -4,6 +4,7 @@ local M = {}
 local refer = require "refer"
 local util = require "refer.util"
 local fuzzy = require "refer.fuzzy"
+local frecency = require "refer.frecency"
 
 ---Escape special regex characters for fd's Rust regex engine
 ---@param s string
@@ -74,17 +75,30 @@ function M.files(opts)
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "open_marked",
             },
+            frecency = { provider = "files", key_strategy = "filepath" },
             parser = util.parsers.file,
             on_select = function(selection, data)
                 util.jump_to_location(selection, data)
                 pcall(vim.api.nvim_command, 'normal! g`"')
             end,
-            post_process = function(output_lines, query)
-                local sorter = "lua"
-                if config.default_sorter and config.default_sorter ~= "blink" then
-                    sorter = config.default_sorter
+            post_process = function(output_lines, query, active_sorter)
+                local sorter = active_sorter or config.default_sorter or "lua"
+                -- Convert fd relative paths to ReferItems with absolute data.filename
+                local items = {}
+                for _, line in ipairs(output_lines) do
+                    table.insert(items, {
+                        text = line,
+                        data = { filename = vim.fn.fnamemodify(line, ":p") },
+                    })
                 end
-                return fuzzy.filter(output_lines, query, { sorter = sorter })
+                local matches, scores = fuzzy.filter(items, query, { sorter = sorter })
+                if sorter == "lua" and frecency.is_enabled() and frecency.is_available() then
+                    matches = frecency.reorder("files", matches, {
+                        scores = scores,
+                        key_strategy = "filepath",
+                    })
+                end
+                return matches
             end,
         }, opts)
     )

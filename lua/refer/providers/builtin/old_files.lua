@@ -8,7 +8,7 @@ local function old_files(opts)
 
     for _, file in ipairs(vim.v.oldfiles) do
         if vim.fn.filereadable(file) == 1 then
-            table.insert(results, { text = file, data = { filename = file } })
+            table.insert(results, { text = file, data = { filename = vim.fn.fnamemodify(file, ":p") } })
         end
     end
 
@@ -21,6 +21,7 @@ local function old_files(opts)
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "open_marked",
             },
+            frecency = { provider = "old_files", key_strategy = "filepath" },
             parser = util.parsers.file,
             on_select = function(selection, data)
                 util.jump_to_location(selection, data)

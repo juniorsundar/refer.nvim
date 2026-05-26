@@ -1,6 +1,8 @@
 local refer = require "refer"
 local builtin = require "refer.providers.builtin"
 local util = require "refer.util"
+local frecency = require "refer.frecency"
+local db = require "refer.frecency.db"
 
 describe("builtin.buffers", function()
     local picker
@@ -283,6 +285,170 @@ describe("builtin.old_files", function()
         picker = builtin.old_files()
 
         assert.are.same("Recent Files > ", picker.opts.prompt)
+    end)
+end)
+
+describe("builtin.old_files frecency", function()
+    local picker
+    local tmpdir
+    local frecency_path
+
+    local function setup_frecency()
+        frecency_path = vim.fn.tempname() .. "_old_files_e2e.json"
+        frecency.configure {
+            db_path = frecency_path,
+            buckets = false,
+            neighborhood_size = 10,
+        }
+    end
+
+    before_each(function()
+        tmpdir = vim.fn.tempname()
+        vim.fn.mkdir(tmpdir, "p")
+        setup_frecency()
+    end)
+
+    after_each(function()
+        if picker then
+            picker:close()
+            picker = nil
+        end
+        if frecency_path then
+            vim.fn.delete(frecency_path, "rf")
+            frecency_path = nil
+        end
+        if tmpdir then
+            vim.fn.delete(tmpdir, "rf")
+            tmpdir = nil
+        end
+        db._reset()
+    end)
+
+    it("items have data.filename set to absolute paths (normalized via :p)", function()
+        local file = tmpdir .. "/old_file.lua"
+        local f = io.open(file, "w")
+        f:write "content\n"
+        f:close()
+
+        vim.v.oldfiles = { file }
+
+        picker = builtin.old_files()
+
+        assert.is_true(#picker.items_or_provider >= 1)
+        local item = picker.items_or_provider[1]
+        assert.is_table(item)
+        assert.is_not_nil(item.data)
+        assert.is_not_nil(item.data.filename)
+        -- filename should be absolute and normalized via :p
+        local expected = vim.fn.fnamemodify(file, ":p")
+        assert.are.same(expected, item.data.filename)
+    end)
+
+    it("passes frecency = { provider = 'old_files', key_strategy = 'filepath' }", function()
+        local file = tmpdir .. "/frec_file.lua"
+        local f = io.open(file, "w")
+        f:write "content\n"
+        f:close()
+
+        vim.v.oldfiles = { file }
+
+        picker = builtin.old_files()
+
+        assert.is_not_nil(picker.opts.frecency)
+        assert.are.same("old_files", picker.opts.frecency.provider)
+        assert.are.same("filepath", picker.opts.frecency.key_strategy)
+    end)
+
+    it("selecting an old file records frecency; reopening with lua sorter ranks it higher", function()
+        local file_a = tmpdir .. "/a_file.lua"
+        local file_b = tmpdir .. "/b_file.lua"
+        local file_c = tmpdir .. "/c_file.lua"
+
+        for _, fpath in ipairs { file_a, file_b, file_c } do
+            local f = io.open(fpath, "w")
+            f:write "content\n"
+            f:close()
+        end
+
+        vim.v.oldfiles = { file_a, file_b, file_c }
+
+        -- First picker: select file_b
+        picker = builtin.old_files { default_sorter = "lua" }
+
+        vim.wait(500, function()
+            return #picker.current_matches == 3
+        end)
+
+        -- Select file_b (second item alphabetically: a_file, b_file, c_file)
+        picker.selected_index = 2
+        picker.actions.select_entry()
+        vim.wait(100)
+        picker = nil
+
+        -- Second picker: file_b should rank higher
+        picker = builtin.old_files { default_sorter = "lua" }
+
+        vim.wait(500, function()
+            return #picker.current_matches == 3
+        end)
+
+        -- file_b (b_file.lua) should now be first
+        assert.are.same(vim.fn.fnamemodify(file_b, ":p"), picker.current_matches[1].data.filename)
+    end)
+
+    it("frecency keys from buffers provider do not affect old_files ranking", function()
+        local file_a = tmpdir .. "/iso_a.lua"
+        local file_b = tmpdir .. "/iso_b.lua"
+
+        for _, fpath in ipairs { file_a, file_b } do
+            local f = io.open(fpath, "w")
+            f:write "content\n"
+            f:close()
+        end
+
+        -- Record frecency for file_b under "buffers" provider
+        local abs_b = vim.fn.fnamemodify(file_b, ":p")
+        frecency.record("buffers", abs_b)
+        frecency.record("buffers", abs_b)
+        frecency.record("buffers", abs_b)
+
+        -- Open old_files picker — buffers recording should NOT affect ranking
+        vim.v.oldfiles = { file_a, file_b }
+        picker = builtin.old_files { default_sorter = "lua" }
+
+        vim.wait(500, function()
+            return #picker.current_matches == 2
+        end)
+
+        -- Without old_files frecency, original order (alphabetical: a_file before b_file)
+        assert.are.same(vim.fn.fnamemodify(file_a, ":p"), picker.current_matches[1].data.filename)
+    end)
+
+    it("frecency keys from old_files do not affect buffers or files", function()
+        local file = tmpdir .. "/cross_provider.lua"
+        local f = io.open(file, "w")
+        f:write "content\n"
+        f:close()
+
+        local abs = vim.fn.fnamemodify(file, ":p")
+
+        -- Record under old_files provider
+        frecency.record("old_files", abs)
+        frecency.record("old_files", abs)
+
+        -- Verify buffers provider does NOT see the old_files recording
+        local buffers_scores = frecency.score("buffers", { abs })
+        assert.is_true(
+            buffers_scores[abs] == nil or buffers_scores[abs] == 0,
+            "buffers provider should not see old_files frecency"
+        )
+
+        -- Verify files provider does NOT see the old_files recording
+        local files_scores = frecency.score("files", { abs })
+        assert.is_true(
+            files_scores[abs] == nil or files_scores[abs] == 0,
+            "files provider should not see old_files frecency"
+        )
     end)
 end)
 
