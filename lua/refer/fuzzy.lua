@@ -104,6 +104,7 @@ M.sorters = {
     ---Pure Lua fuzzy sorter
     ---@type ReferSorterFn
     ---@return table|nil matched_indices
+    ---@return table<string, number>|nil scores Map of item text to fuzzy score
     lua = function(items, query)
         local tokens = {}
         for token in query:gmatch "%S+" do
@@ -138,10 +139,12 @@ M.sorters = {
         end)
 
         local matches = {}
+        local scores = {}
         for _, entry in ipairs(scored) do
             table.insert(matches, entry.item)
+            scores[entry.item] = entry.score
         end
-        return matches
+        return matches, scores
     end,
 }
 
@@ -181,6 +184,7 @@ end
 ---@param query string The search query
 ---@param opts table Options { sorter = function, use_blink = boolean }
 ---@return ReferItem[] matches List of matching ReferItem tables
+---@return table<string, number>|nil fuzzy_scores Map of item text to fuzzy score (lua sorter only)
 function M.filter(items_or_provider, query, opts)
     opts = opts or {}
 
@@ -194,22 +198,27 @@ function M.filter(items_or_provider, query, opts)
         sorter = M.sorters[sorter]
     end
 
+    local is_lua_sorter = (sorter == M.sorters.lua)
+
     if type(items_or_provider[1]) == "string" then
         local matched_texts
+        local fuzzy_scores = nil
         if query == "" then
             matched_texts = items_or_provider
+        elseif is_lua_sorter then
+            matched_texts, fuzzy_scores = sorter(items_or_provider, query)
         elseif sorter then
             matched_texts = sorter(items_or_provider, query)
         elseif opts.use_blink then
             matched_texts = M.sorters.blink(items_or_provider, query)
             if not matched_texts then
-                matched_texts = M.sorters.lua(items_or_provider, query)
+                matched_texts, fuzzy_scores = M.sorters.lua(items_or_provider, query)
             end
         else
-            matched_texts = M.sorters.lua(items_or_provider, query)
+            matched_texts, fuzzy_scores = M.sorters.lua(items_or_provider, query)
         end
 
-        return util.normalize_items(matched_texts or {})
+        return util.normalize_items(matched_texts or {}), fuzzy_scores
     end
 
     -- Normalize all inputs to ReferItem[]
@@ -224,33 +233,39 @@ function M.filter(items_or_provider, query, opts)
         return item.text
     end, normalized)
 
-    -- Build lookup from text back to ReferItem
+    -- Build lookup from text back to ReferItem (supports duplicate texts via queue)
     local by_text = {}
     for _, item in ipairs(normalized) do
-        by_text[item.text] = item
+        if not by_text[item.text] then
+            by_text[item.text] = {}
+        end
+        table.insert(by_text[item.text], item)
     end
 
     local matched_texts
-    if sorter then
+    local fuzzy_scores = nil
+    if is_lua_sorter then
+        matched_texts, fuzzy_scores = sorter(text_items, query)
+    elseif sorter then
         matched_texts = sorter(text_items, query)
     elseif opts.use_blink then
         matched_texts = M.sorters.blink(text_items, query)
         if not matched_texts then
-            matched_texts = M.sorters.lua(text_items, query)
+            matched_texts, fuzzy_scores = M.sorters.lua(text_items, query)
         end
     else
-        matched_texts = M.sorters.lua(text_items, query)
+        matched_texts, fuzzy_scores = M.sorters.lua(text_items, query)
     end
 
-    -- Map matched text strings back to ReferItem tables
+    -- Map matched text strings back to ReferItem tables (pop from queue for duplicates)
     local result = {}
     for _, text in ipairs(matched_texts) do
-        local item = by_text[text]
-        if item then
-            table.insert(result, item)
+        local bucket = by_text[text]
+        if bucket and #bucket > 0 then
+            table.insert(result, table.remove(bucket, 1))
         end
     end
-    return result
+    return result, fuzzy_scores
 end
 
 ---Check if Blink fuzzy matcher is available

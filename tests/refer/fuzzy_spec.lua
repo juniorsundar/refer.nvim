@@ -224,6 +224,41 @@ describe("refer.fuzzy", function()
             assert.are.same("foo", res[1].text)
             assert.are.same("bar", res[2].text)
         end)
+
+        -- Score exposure tests (Slice 3)
+        it("returns scores map with lua sorter and non-empty query", function()
+            local items = { "apple", "banana", "apricot" }
+            local matches, scores = fuzzy.filter(items, "ap", { sorter = "lua" })
+            assert.are.same(2, #matches)
+            assert.are.same("table", type(scores))
+            assert.is_not_nil(scores["apple"])
+            assert.is_not_nil(scores["apricot"])
+            assert.is_nil(scores["banana"])
+        end)
+
+        it("returns scores map with lua sorter and ReferItem input", function()
+            local items = { { text = "apple" }, { text = "banana" }, { text = "apricot" } }
+            local matches, scores = fuzzy.filter(items, "ap", { sorter = "lua" })
+            assert.are.same(2, #matches)
+            assert.are.same("table", type(scores))
+            assert.is_not_nil(scores["apple"])
+            assert.is_not_nil(scores["apricot"])
+            assert.is_nil(scores["banana"])
+        end)
+
+        it("returns nil scores with non-lua sorter", function()
+            local items = { "apple", "apricot", "banana" }
+            local matches, scores = fuzzy.filter(items, "ap", { sorter = "native" })
+            assert.are.same(2, #matches)
+            assert.is_nil(scores)
+        end)
+
+        it("returns nil scores for empty query", function()
+            local items = { "apple", "banana" }
+            local matches, scores = fuzzy.filter(items, "", { sorter = "lua" })
+            assert.are.same(2, #matches)
+            assert.is_nil(scores)
+        end)
     end)
 
     describe("register_items", function()
