@@ -118,6 +118,9 @@ local default_opts = {
         enabled = true,
         max_lines = 1000,
     },
+    frecency = {
+        enabled = true,
+    },
     extras = {},
     keymaps = {
         ["<Tab>"] = { action = "complete_selection", desc = "Complete selection" },

@@ -39,6 +39,7 @@ local function buffers(opts)
         util.jump_to_location,
         vim.tbl_deep_extend("force", {
             prompt = "Buffers > ",
+            frecency = { provider = "buffers", key_strategy = "filepath" },
             keymaps = {
                 ["<Tab>"] = "toggle_mark",
                 ["<CR>"] = "open_marked",
