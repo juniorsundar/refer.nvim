@@ -6,19 +6,23 @@ local M = {}
 -- Module configuration (buckets and neighborhood_size are used by this module,
 -- db_path and clock_fn are passed through to db)
 local config = {
+    enabled = true,
     buckets = nil,
     neighborhood_size = 10,
 }
 
 ---Configure the frecency module.
----Accepts: db_path, buckets, neighborhood_size, clock_fn.
+---Accepts: enabled, db_path, buckets, neighborhood_size, clock_fn.
 ---db_path and clock_fn are passed through to the db module.
----buckets and neighborhood_size are stored for use in score/reorder.
+---buckets, neighborhood_size, and enabled are stored for use in score/reorder.
 ---@param opts table
 function M.configure(opts)
     opts = opts or {}
 
     -- Store score-related config locally
+    if opts.enabled ~= nil then
+        config.enabled = opts.enabled
+    end
     if opts.buckets ~= nil then
         config.buckets = (opts.buckets == false) and nil or opts.buckets
     end
@@ -70,7 +74,7 @@ end
 ---and reordered within each neighborhood by frecency score.
 ---@param provider string
 ---@param items ReferItem[]|string[]
----@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil }
+---@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil, key_strategy = string|fun(item: ReferItem): string, clock_fn = function|nil }
 ---@return table reordered_items
 function M.reorder(provider, items, opts)
     opts = opts or {}
@@ -80,12 +84,23 @@ function M.reorder(provider, items, opts)
         return items
     end
 
+    -- Build a key resolver based on the strategy
+    local key_strategy = opts.key_strategy or "text"
+    local resolve_fn
+    if type(key_strategy) == "function" then
+        resolve_fn = key_strategy
+    else
+        resolve_fn = function(item)
+            return score_mod.resolve_key(item, key_strategy)
+        end
+    end
+
     -- Use provided frecency_scores, or compute from provider/item keys
     local frecency_scores = opts.frecency_scores
     if not frecency_scores and provider and provider ~= "" then
         local item_keys = {}
         for _, item in ipairs(items) do
-            local key = score_mod.resolve_key(item, "text")
+            local key = resolve_fn(item)
             if key then
                 table.insert(item_keys, key)
             end
@@ -101,7 +116,7 @@ function M.reorder(provider, items, opts)
 
     -- Empty-query: no fuzzy scores → sort entirely by frecency
     if not opts.scores or next(opts.scores) == nil then
-        return score_mod.sort_by_frecency(items, frecency_scores)
+        return score_mod.sort_by_frecency(items, frecency_scores, resolve_fn)
     end
 
     -- With fuzzy scores: neighborhood-based reordering
@@ -109,6 +124,7 @@ function M.reorder(provider, items, opts)
         scores = opts.scores,
         frecency_scores = frecency_scores,
         neighborhood_size = opts.neighborhood_size or config.neighborhood_size,
+        resolve_fn = resolve_fn,
     }
 
     return score_mod.reorder(items, reorder_opts)
@@ -126,6 +142,12 @@ end
 ---@return boolean
 function M.is_available()
     return db.is_available()
+end
+
+---Check whether frecency is globally enabled.
+---@return boolean
+function M.is_enabled()
+    return config.enabled ~= false
 end
 
 return M

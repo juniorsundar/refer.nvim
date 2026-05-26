@@ -111,7 +111,7 @@ end
 ---Items without a frecency score appear after scored items, preserving original order.
 ---When opts.scores is nil, items are returned unchanged.
 ---@param items ReferItem[]|string[] Items in fuzzy-score order
----@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil }
+---@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil, resolve_fn = fun(item: ReferItem|string): string|nil }
 ---@return table reordered_items
 function M.reorder(items, opts)
     if #items == 0 then
@@ -126,16 +126,19 @@ function M.reorder(items, opts)
 
     local frecency_scores = opts.frecency_scores or {}
     local neighborhood_size = (opts.neighborhood_size and opts.neighborhood_size > 0) and opts.neighborhood_size or 10
+    ---@type fun(item: ReferItem|string): string|nil
+    local resolve_fn = opts.resolve_fn or item_text
 
     -- Build array with text accessor and fuzzy score
     local entries = {}
     for i, item in ipairs(items) do
         local text = item_text(item)
+        local resolved_key = resolve_fn(item)
         local fuzzy_score = text and scores[text]
-        local frecency = (text and frecency_scores[text]) or nil
+        local frecency = (resolved_key and frecency_scores[resolved_key]) or nil
         table.insert(entries, {
             item = item,
-            text = text,
+            key = resolved_key,
             original_index = i,
             fuzzy_score = fuzzy_score,
             frecency = frecency,
@@ -218,18 +221,20 @@ end
 ---Items with frecency scores come first (descending), then unscored items in original order.
 ---@param items ReferItem[]|string[] Items to sort
 ---@param frecency_scores table<string, number> Map of item_key → frecency_score
+---@param resolve_fn? fun(item: ReferItem|string): string|nil Key resolver (defaults to item_text)
 ---@return table sorted_items
-function M.sort_by_frecency(items, frecency_scores)
+function M.sort_by_frecency(items, frecency_scores, resolve_fn)
     if #items == 0 then
         return {}
     end
 
     frecency_scores = frecency_scores or {}
+    resolve_fn = resolve_fn or item_text
 
     local entries = {}
     for i, item in ipairs(items) do
-        local text = item_text(item)
-        local frecency = (text and frecency_scores[text]) or nil
+        local key = resolve_fn(item)
+        local frecency = (key and frecency_scores[key]) or nil
         table.insert(entries, {
             item = item,
             original_index = i,
