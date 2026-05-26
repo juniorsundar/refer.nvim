@@ -10,7 +10,7 @@
 ## Decisions
 
 - **Frecency definition**: Frequency-weighted recency — a composite score where items selected more often and more recently rank higher.
-- **Persistence**: SQLite via `vim.sqlite` (Neovim 0.10+ built-in). Schema: `provider | item_key | selected_count | last_selected_at`.
+- **Persistence**: JSON file persistence stored under Refer's data directory. Records are keyed by Provider identity and item key, with selected count and last selected timestamp.
 - **Frecency scope**: Per-provider. Each provider (buffers, commands, files, etc.) tracks its own frecency independently.
 - **Frecency integration**: Post-sort reordering. The existing sorter produces fuzzy-matched results, then frecency scores reorder them as a second pass.
 - **Frecency formula**: Mozilla-style bucketed scoring. `score = count / (age_bucket + 1)` where age buckets assign higher multipliers to more recent selections (e.g., last hour, last day, last week, older). Configurable bucket weights.
@@ -21,7 +21,7 @@
 - **Frecency on empty query**: Yes. When no search term is entered, the full item list is sorted entirely by frecency score. The most frequently/recently used items appear at the top without typing.
 - **Frecency eviction**: Lazy eviction on read. Stale DB entries are skipped at query time; a periodic vacuum (on Neovim exit or every N sessions) removes orphaned rows and caps per-provider entries at ~10,000.
 - **Frecency sorter scope**: Hardcoded to the `lua` sorter only. Inactive for `blink`, `mini`, `native`, and any custom sorters. If a user brings their own sorter, frecency integration is their responsibility.
-- **Module structure**: `lua/refer/frecency/` directory with `init.lua` (public API: record, score, reorder), `db.lua` (SQLite persistence), `score.lua` (bucketed scoring + neighborhood reordering).
+- **Module structure**: `lua/refer/frecency/` directory with `init.lua` (public API: record, score, reorder), `db.lua` (JSON persistence), `score.lua` (bucketed scoring + neighborhood reordering).
 - **Provider identity**: New `provider` option on `ReferOptions`. Builtin providers pass `provider = "buffers"` etc. If absent, no frecency is recorded or applied.
-- **SQLite unavailable**: Graceful degradation. If `vim.sqlite` is absent (Neovim <0.10 or no SQLite), frecency enters a no-op mode: `record()` does nothing, `reorder()` returns items unchanged. A one-time `DEBUG`-level notice is logged.
+- **Persistence failure**: Graceful degradation. If the JSON store cannot be read or written, Frecency enters no-op mode for the session so picker behavior remains unaffected.
 - **Score exposure**: The `lua` sorter will expose numeric fuzzy scores (already computed by `simple_fuzzy_score`) so frecency can group items by match-quality neighborhoods rather than arbitrary position boundaries.

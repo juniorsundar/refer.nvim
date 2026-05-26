@@ -18,7 +18,7 @@ pre-commit run -a  # Run all hooks (StyLua check + YAML lint)
 `.stylua.toml` governs formatting: 4-space indent, 120 columns, double quotes, no parentheses on calls. Run `stylua lua/ tests/` before committing.
 
 - `snake_case` for functions and variables, `UpperCamel` for class-like tables.
-- Prefix internal-only helpers with `_` and expose under `M._fn` for testing.
+- Prefix internal-only helpers with `_`. For test access, expose them either directly on `M` (e.g., `M._reset`) or grouped under `M._fn` — both conventions are acceptable.
 - `vim.validate` for user-facing API inputs.
 - `pcall(require, ...)` for optional dependencies.
 - **No explanatory comments by default** — LuaCATS annotations are required, but avoid extra prose comments unless the code is genuinely non-obvious or a complex edge case needs clarification. The code should speak for itself; trust naming and structure over inline prose.
@@ -99,4 +99,4 @@ When changing public APIs, commands, keymaps, options, providers, or user-facing
 - **Sorter registry**: `fuzzy.sorters[name]` — four built-in (`blink`, `mini`, `native`, `lua`). Custom ones via `fuzzy.register_sorter(name, fn)`.
 - **Async picker**: `refer.pick_async(cmd_generator, on_select, opts)` streams via `vim.system` with debounce.
 - **Parser schema**: `util.register_parser(name, { pattern = "..", keys = {..}, types = {..} })` for extracting filename/lnum/col.
-- **Frecency**: Post-sort reordering (Mozilla buckets), per-provider, opt-out, neighborhood-based (groups of ~10), only on `lua` sorter. No-op if `vim.sqlite` missing.
+- **Frecency**: Post-sort reordering (Mozilla buckets), per-provider, opt-out, neighborhood-based (groups of ~10), only on `lua` sorter. No-op if the JSON store is unavailable or corrupt. (SQLite was considered and rejected — see ADR 0001.)

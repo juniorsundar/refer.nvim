@@ -8,13 +8,31 @@ Accepted
 
 refer.nvim's built-in `lua` sorter performs fuzzy matching but has no history-based ranking. Items that a user selects frequently still appear in purely text-match order every session. Other sorters (`blink`, `mini`, `native`) either have their own ranking or delegate to external engines. The `lua` sorter has no built-in recency or frequency signal.
 
+Frecency history needs local persistence so ranking can improve across Neovim sessions. Neovim does not provide a standard built-in SQLite API, so a SQLite-only implementation would either require an external dependency or silently disable Frecency for normal installs.
+
 ## Decision
 
 Add a frecency module (`lua/refer/frecency/`) that records item selections and reorders results for the `lua` sorter using frequency-weighted recency (Mozilla-style bucketed scoring).
 
 Key design choices:
 
-1. **Persistence**: SQLite via `vim.sqlite` (Neovim 0.10+). Schema: `(provider, item_key, selected_count, last_selected_at)`. Graceful no-op degradation if SQLite is unavailable.
+1. **Persistence**: Store Frecency records in a JSON file. The default path is `stdpath("data") .. "/refer/frecency.json"`, configurable via `db_path`. The JSON shape is versioned and grouped by Provider:
+
+   ```json
+   {
+     "version": 1,
+     "providers": {
+       "buffers": {
+         "/abs/path/file.lua": {
+           "selected_count": 3,
+           "last_selected_at": 1234567890.123
+         }
+       }
+     }
+   }
+   ```
+
+   Writes use an atomic temp-file + rename flow. If the store cannot be read, decoded, or written, Frecency enters session no-op mode and leaves the existing file untouched.
 
 2. **Scope**: Per-provider, opt-out by default. Each provider tracks its own frecency independently via a `provider` option on `ReferOptions`.
 
@@ -30,19 +48,24 @@ Key design choices:
 
 8. **Sorter scope**: Hardcoded to `lua` only. `blink`, `mini`, `native`, and custom sorters are not affected.
 
-9. **Eviction**: Lazy on read; periodic vacuum on Neovim exit caps per-provider at ~10,000 entries.
+9. **Eviction**: Lazy on read; periodic cleanup on Neovim exit caps per-provider entries at ~10,000 and rewrites the JSON store.
 
 ## Consequences
 
-- **Positive**: Users of the `lua` sorter get history-based ranking without external dependencies (SQLite is built into Neovim 0.10+). Most-used items surface immediately on empty query. Fuzzy match quality remains the primary signal, preventing weak matches from jumping to the top.
+- **Positive**: Users of the `lua` sorter get history-based ranking with no external dependencies. Most-used items surface immediately on empty query. Fuzzy match quality remains the primary signal, preventing weak matches from jumping to the top.
 
-- **Negative**: Adds a SQLite dependency path (gracefully degraded). The `lua` sorter's behavior diverges from other sorters — the same query on `lua` vs `blink` may produce different orderings due to frecency. This is intentional: sorters with built-in ranking don't need our frecency layer.
+- **Positive**: The persistence format is inspectable and portable. Tests can exercise real persistence behavior without mocking a native dependency.
+
+- **Negative**: JSON persistence rewrites the store as a whole. This is acceptable for the planned per-provider cap (~10,000 entries), but it is less scalable than SQLite for very large histories.
+
+- **Negative**: JSON lacks database-level locking and transactions. Atomic temp-file + rename reduces the risk of truncated writes, but concurrent Neovim sessions may still race. The last writer wins.
 
 - **Risk**: The `lua` sorter currently returns `string[]` only. Exposing scores requires internal changes to `fuzzy.filter()` to preserve score data when the `lua` sorter is active. This is a limited-scope change but touches a core path.
 
 ## Alternatives Considered
 
-- **JSON file persistence**: Simpler but scales poorly and lacks atomic writes.
+- **SQLite via plugin dependency**: More scalable and queryable, but would require users to install an additional plugin/native library path for Frecency to work.
+- **SQLite via nonexistent `vim.sqlite`**: Rejected because standard Neovim does not provide this API.
 - **Global frecency**: Cross-provider tracking risks confusing the same text appearing in different contexts.
 - **Hybrid score formula**: Would require all sorters to expose numeric scores, changing the `ReferSorterFn` interface.
 - **Top-N frecency promotion**: Too aggressive — weak matches could jump to position 1.

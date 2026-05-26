@@ -8,7 +8,7 @@ The project already supports multiple Sorters, including external or native engi
 
 ## Solution
 
-Add a Frecency system for the built-in `lua` sorter only. The system records explicit picker selections per Provider, persists selection history with SQLite when available, computes a frequency-weighted recency score, and uses that score to reorder fuzzy-matched results after the existing fuzzy matching pass.
+Add a Frecency system for the built-in `lua` sorter only. The system records explicit picker selections per Provider, persists selection history in a JSON store, computes a frequency-weighted recency score, and uses that score to reorder fuzzy-matched results after the existing fuzzy matching pass.
 
 From the user's perspective:
 
@@ -17,7 +17,7 @@ From the user's perspective:
 - When the query is empty, the picker can show the most useful items first.
 - Textual match quality remains the primary ranking signal when a query is present.
 - Frecency is active only for the built-in `lua` sorter and only for Providers that identify themselves.
-- If SQLite is unavailable, the feature degrades gracefully and the picker continues to work without Frecency.
+- If the JSON store cannot be read or written, the feature degrades gracefully and the picker continues to work without Frecency.
 
 ## User Stories
 
@@ -71,7 +71,7 @@ From the user's perspective:
 
 25. As a plugin maintainer, I want Frecency hidden behind a small public module interface, so that persistence and scoring details can change without spreading complexity through the codebase.
 
-26. As a plugin maintainer, I want SQLite logic isolated from scoring logic, so that database behavior can be tested and maintained separately.
+26. As a plugin maintainer, I want persistence logic isolated from scoring logic, so that store behavior can be tested and maintained separately.
 
 27. As a plugin maintainer, I want scoring logic isolated from picker action handling, so that ranking behavior can be tested without UI setup.
 
@@ -87,15 +87,15 @@ From the user's perspective:
 
 33. As a plugin maintainer, I want stale Frecency entries to be harmless at query time, so that deleted files or unavailable items do not affect visible ranking.
 
-34. As a plugin maintainer, I want periodic cleanup to cap database growth, so that long-term use does not create unbounded local state.
+34. As a plugin maintainer, I want periodic cleanup to cap store growth, so that long-term use does not create unbounded local state.
 
 35. As a plugin maintainer, I want the Frecency store to be per-user local state, so that repository behavior remains deterministic and no user history enters source control.
 
-36. As a plugin maintainer, I want a graceful no-op mode when SQLite is unavailable, so that tests and older environments can still exercise the picker.
+36. As a plugin maintainer, I want a graceful no-op mode when persistence fails, so that tests and older environments can still exercise the picker.
 
 37. As a plugin maintainer, I want documentation to explain that Frecency applies only to the `lua` sorter, so that users understand why other Sorters behave differently.
 
-38. As a plugin maintainer, I want health or diagnostics to make Frecency availability understandable, so that users can debug missing SQLite support without reading code.
+38. As a plugin maintainer, I want health or diagnostics to make Frecency availability understandable, so that users can debug Frecency persistence state without reading code.
 
 39. As a tester, I want deterministic scoring tests with injected timestamps, so that Frecency behavior can be tested without depending on wall-clock time.
 
@@ -115,11 +115,11 @@ From the user's perspective:
 
 47. As a refer.nvim user, I want to globally disable Frecency recording and reordering, so that I can turn off the feature entirely without disabling each Provider individually.
 
-48. As a refer.nvim user, I want the picker to remain responsive even if the Frecency database is locked or slow, so that database latency never blocks the UI.
+48. As a refer.nvim user, I want the picker to remain responsive even if the Frecency store is slow or temporarily unavailable, so that persistence latency never blocks the UI.
 
 49. As a refer.nvim user running an async Provider like files or live grep, I want Frecency to still work for items I have selected, so that async Providers participate in history when they have results.
 
-50. As a plugin maintainer, I want the Frecency system to handle database corruption or write failures gracefully, so that a damaged store does not crash the picker or lose all history.
+50. As a plugin maintainer, I want the Frecency system to handle store corruption or write failures gracefully, so that a damaged store does not crash the picker or lose all history.
 
 51. As a plugin maintainer, I want Sorter identity to be tracked by name rather than by function reference, so that Frecency activation can be determined reliably even after sorter cycling.
 
@@ -129,23 +129,23 @@ From the user's perspective:
 
 - Build a Frecency module as a deep module with a small public interface. The public surface should expose operations for recording selections, computing or retrieving Frecency scores, reordering matched ReferItems, resolving item keys, checking availability, and performing cleanup. Persistence, scoring, key extraction, and cleanup should remain internal details.
 
-- Split Frecency internals into persistence and scoring responsibilities. The persistence component owns SQLite availability, schema initialization, writes, reads, no-op degradation, and vacuuming. The scoring component owns bucketed score calculation, key strategy application, empty-query ordering, and neighborhood-based reordering.
+- Split Frecency internals into persistence and scoring responsibilities. The persistence component owns JSON store initialization, atomic writes, reads, no-op degradation, and cleanup rewriting. The scoring component owns bucketed score calculation, key strategy application, empty-query ordering, and neighborhood-based reordering.
 
 ### Persistence
 
-- Persist Frecency with SQLite through Neovim's built-in SQLite support. The store records Provider identity, item key, selected count, and last selected timestamp. The Provider identity and item key form the logical unique identity of a Frecency record.
+- Persist Frecency in a JSON file. The store records Provider identity, item key, selected count, and last selected timestamp. The Provider identity and item key form the logical unique identity of a Frecency record.
 
-- Store the database at `stdpath("data") .. "/refer/frecency.db"`. The directory must be created on first use if it does not exist.
+- Store the JSON file at `stdpath("data") .. "/refer/frecency.json"` by default. The directory must be created on first use if it does not exist. The `db_path` option remains the configurable persistence path for this feature.
 
-- Handle SQLite runtime failures gracefully. If a write fails (locked DB, permission error, corrupt file, schema mismatch), log a one-time `WARN` message and continue in no-op mode for the rest of the session. Do not crash or block the picker. If a read fails, return empty results so the picker still functions with no Frecency data.
+- Handle JSON persistence failures gracefully. If the store cannot be read, decoded, or written, log a one-time `WARN` message, leave any existing file untouched, and continue in no-op mode for the rest of the session. Do not crash or block the picker.
 
-- Gracefully degrade when SQLite is unavailable. In degraded mode, recording is a no-op and reordering returns its input unchanged. The rest of refer.nvim must continue to work.
+- Gracefully degrade when persistence is unavailable. In degraded mode, recording is a no-op and reordering returns its input unchanged. The rest of refer.nvim must continue to work.
 
 ### Scoring formula
 
 - Use Mozilla-style bucketed Frecency scoring: `score = count / (age_bucket + 1)`. Age buckets assign multipliers based on when the item was last selected: items selected within the last hour receive the highest multiplier, items within the last day receive a lower multiplier, items within the last week receive a lower one, and older items receive the lowest. Bucket boundaries and multipliers are configurable via setup options but have sensible defaults.
 
-- Evict lazily. Stale entries do not appear in results unless a Provider presents a matching item. Periodic vacuuming on Neovim exit removes orphaned rows and caps per-Provider storage at approximately 10,000 entries.
+- Evict lazily. Stale entries do not appear in results unless a Provider presents a matching item. Periodic vacuuming on Neovim exit removes orphaned records and caps per-Provider storage at approximately 10,000 entries.
 
 ### Sorter detection
 
@@ -178,7 +178,7 @@ From the user's perspective:
 
 - Add a global `frecency` option in `setup()` for top-level configuration:
   - `enabled` (boolean, defaults to `true`): global kill switch for all Frecency recording and reordering.
-  - `db_path` (string, optional): override the database file path. Defaults to `stdpath("data") .. "/refer/frecency.db"`. Useful for testing.
+  - `db_path` (string, optional): override the JSON store path. Defaults to `stdpath("data") .. "/refer/frecency.json"`. Useful for testing.
   - `buckets` (table, optional): override recency bucket boundaries and multipliers. Defaults to sensible values (last hour, last day, last week, older).
   - `neighborhood_size` (number, defaults to `10`): number of items in a match-quality neighborhood for post-sort reordering.
 
@@ -228,11 +228,11 @@ From the user's perspective:
 ### Health and diagnostics
 
 - Update the existing health check to report Frecency status:
-  - SQLite available and Frecency active.
-  - SQLite unavailable (Neovim <0.10 or no SQLite build) — Frecency disabled.
+  - JSON store available and Frecency active.
+  - JSON store unavailable or corrupt — Frecency disabled for the session.
   - Frecency globally disabled via configuration.
 
-- Update documentation to describe Frecency semantics, the `lua` Sorter scope, Provider identity, key strategies, opt-out behavior, SQLite graceful degradation, and cleanup behavior.
+- Update documentation to describe Frecency semantics, the `lua` Sorter scope, Provider identity, key strategies, opt-out behavior, JSON persistence graceful degradation, and cleanup behavior.
 
 ## Testing Decisions
 
@@ -240,9 +240,9 @@ From the user's perspective:
 
 - Test the Frecency public module as a deep module. Use deterministic inputs and injected timestamps where needed. Verify that recording a selection changes future ordering for the same Provider and key.
 
-- Test the persistence component through observable operations: initialization, upsert-on-record, reading multiple keys, Provider isolation, missing SQLite no-op behavior, and cleanup limits. Avoid tests that depend on the exact internal SQL beyond the agreed schema contract.
+- Test the persistence component through observable operations: initialization, upsert-on-record, reading multiple keys, Provider isolation, persistence failure no-op behavior, and cleanup limits. Prefer observable behavior over coupling tests to incidental JSON formatting details beyond the agreed versioned store shape.
 
-- Test the scoring component independently from SQLite. Cover bucket selection, score ordering, tie handling, empty-query sorting, items without scores, and neighborhood-based reordering.
+- Test the scoring component independently from persistence. Cover bucket selection, score ordering, tie handling, empty-query sorting, items without scores, and neighborhood-based reordering.
 
 - Test key strategies. Verify text-based keys, filepath-based keys, filepath-with-line keys, missing data behavior, and custom key functions.
 
@@ -262,9 +262,9 @@ From the user's perspective:
 
 - Test global disable. When `frecency.enabled = false` at the setup level, no Provider should record or apply Frecency regardless of individual Provider settings.
 
-- Test graceful degradation. When SQLite is unavailable, Frecency should not throw, should not reorder, and should not prevent selection.
+- Test graceful degradation. When persistence is unavailable, Frecency should not throw, should not reorder, and should not prevent selection.
 
-- Test SQLite runtime failures. Verify that a locked DB, write failure, or corrupt file does not crash the picker. Verify that a one-time warning is logged and that the session continues in no-op mode.
+- Test JSON persistence failures. Verify that read/decode/write failures or a corrupt file do not crash the picker. Verify that a one-time warning is logged, the corrupt file is left untouched, and the session continues in no-op mode.
 
 - Test async and on_change Provider behavior. Verify that file Provider items receive Frecency reordering when results arrive. Verify that command-completion Provider items receive Frecency reordering through the `on_change` path. Verify that empty-query Frecency works for synchronous Providers and degrades gracefully for async Providers that require a minimum query length.
 
@@ -286,11 +286,11 @@ From the user's perspective:
 
 - Replacing or disabling Blink's own internal Frecency behavior.
 
-- Implementing a JSON persistence fallback.
+- Implementing an additional SQLite persistence backend.
 
 - Implementing global cross-Provider Frecency.
 
-- Adding a UI for browsing, editing, importing, or exporting Frecency history.
+- Adding a UI for brecordsing, editing, importing, or exporting Frecency history.
 
 - Syncing Frecency history across machines.
 
@@ -308,7 +308,7 @@ From the user's perspective:
 
 - The central product constraint is that Frecency improves the built-in `lua` sorter without surprising users of other Sorters.
 
-- The Frecency module should be treated as a deep module: callers should not need to understand SQLite, bucket math, cleanup policy, or key extraction internals.
+- The Frecency module should be treated as a deep module: callers should not need to understand JSON persistence, bucket math, cleanup policy, or key extraction internals.
 
 - The domain glossary terms used here are Frecency, Sorter, ReferItem, and Provider (see `CONTEXT.md`).
 
@@ -318,6 +318,6 @@ From the user's perspective:
 
 - The exact Frecency scoring formula is `score = count / (age_bucket + 1)` with configurable bucket boundaries and multipliers. Default buckets are: last hour (highest multiplier), last day, last week, older (lowest multiplier).
 
-- The database is stored at `stdpath("data") .. "/refer/frecency.db"` by default. This path can be overridden in configuration for testing or alternative setups.
+- The JSON store is stored at `stdpath("data") .. "/refer/frecency.json"` by default. This path can be overridden with `db_path` for testing or alternative setups.
 
 - Sorter identity for Frecency activation is determined by name (`"lua"`) rather than by function reference. This avoids ambiguity when sorter cycling changes the active function or when a custom sorter wraps the built-in `lua` sorter.

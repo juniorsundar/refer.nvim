@@ -21,7 +21,7 @@ This slice touches every integration layer:
 
    Add global `frecency` config in `setup()` (minimal plumbing for this slice — Issue 5 owns the full global-disable behavior, health check, and graceful degradation):
    - `enabled` (boolean): global kill switch, defaults to `true`.
-   - `db_path` (string): override database path.
+   - `db_path` (string): override JSON store path.
    - `buckets` (table): override bucket boundaries/multipliers.
    - `neighborhood_size` (number): defaults to `10`.
 
@@ -56,7 +56,7 @@ After this slice, a user can: open the buffers picker with the `lua` sorter acti
 - [ ] An empty buffers picker query with the `lua` sorter active shows frecent buffers first
 - [ ] Cycling the sorter away from `lua` disables Frecency reordering; cycling back to `lua` re-enables it
 - [ ] Two ReferItems with the same `text` but different `data.filename` remain distinct through Lua filtering and Frecency reordering (filepath strategy resolves different keys)
-- [ ] When Frecency is in no-op mode (SQLite unavailable), the buffers picker still selects and reorders normally with no crashes or errors
+- [ ] When Frecency is in no-op mode (persistence failure), the buffers picker still selects and reorders normally with no crashes or errors
 - [ ] Existing tests for fuzzy sorting, picker behavior, and actions still pass
 - [ ] New tests cover: sorter name tracking (initial name, cycling, custom sorter names), score exposure (lua path returns scores, non-luapaths omit them), reorder activation/deactivation, action recording (including recording before close), buffers Provider Frecency wiring, no-op mode integration
 
