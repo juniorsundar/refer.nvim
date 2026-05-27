@@ -102,6 +102,7 @@ local function help_tags(opts)
         end,
         vim.tbl_deep_extend("force", {
             prompt = "Help > ",
+            frecency = { provider = "help_tags", key_strategy = "text" },
             keymaps = {
                 ["<CR>"] = "select_entry",
             },

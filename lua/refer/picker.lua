@@ -664,6 +664,39 @@ function Picker:refresh(force)
                     else
                         self.current_matches = util.normalize_items(matches or {})
                     end
+
+                    -- Frecency reordering for on_change path
+                    local frec_opts = self.opts.frecency
+                    if
+                        frecency.is_enabled()
+                        and self.sorter_name == "lua"
+                        and frec_opts
+                        and frec_opts.provider
+                        and frec_opts.enabled ~= false
+                        and frecency.is_available()
+                    then
+                        local reorder_opts = {
+                            key_strategy = frec_opts.key_strategy or "text",
+                        }
+                        if input == "" then
+                            -- Empty query: full frecency sort
+                            self.current_matches =
+                                frecency.reorder(frec_opts.provider, self.current_matches, reorder_opts)
+                        elseif #self.current_matches > 0 then
+                            -- Non-empty: position-based neighborhood reorder
+                            local neighborhood_size = frecency.get_neighborhood_size()
+                            local position_scores = {}
+                            for i, item in ipairs(self.current_matches) do
+                                local text = type(item) == "table" and item.text or item
+                                position_scores[text] = math.floor((i - 1) / neighborhood_size)
+                            end
+                            reorder_opts.scores = position_scores
+                            reorder_opts.neighborhood_size = neighborhood_size
+                            self.current_matches =
+                                frecency.reorder(frec_opts.provider, self.current_matches, reorder_opts)
+                        end
+                    end
+
                     if first_render then
                         self.selected_index = 1
                         first_render = false

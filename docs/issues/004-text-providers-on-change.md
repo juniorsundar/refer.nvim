@@ -20,19 +20,19 @@ All ranking acceptance criteria assume the `lua` sorter is active. Under the def
 
 ### Acceptance criteria
 
-- [ ] `commands` provider passes `frecency = { provider = "commands", key_strategy = "text" }`
-- [ ] Frecency reordering applies in the `on_change` callback path for commands when the `lua` Sorter is active — callback results are the base order, Frecency reorders within position-based neighborhoods for non-empty input
-- [ ] Empty-query commands picker with `lua` sorter active shows frecent commands first (full frecency ordering)
-- [ ] Frecency does NOT reorder command results when a non-`lua` sorter is active, when Provider identity is absent, when Frecency is globally disabled, or when per-provider Frecency is disabled
-- [ ] Selecting a command records Frecency for that command text; reopening with `lua` sorter active shows it ranked higher
-- [ ] `select_input` in the commands picker records only when the input exactly matches a ReferItem's `text` field in `current_matches`; arbitrary typed command text that doesn't match a completion does not record
-- [ ] `help_tags` provider passes `frecency = { provider = "help_tags", key_strategy = "text" }`
-- [ ] Selecting a help tag records Frecency; subsequent searches with `lua` sorter active show it ranked higher
-- [ ] Empty-query help_tags picker with `lua` sorter active shows frecent tags first
-- [ ] `macros` outer picker passes `frecency = { provider = "macros", key_strategy = "text" }`; inner macro-editing picker does NOT inherit or apply Frecency (the `frecency` option is stripped before the inner `refer.pick` call)
-- [ ] Frecency keys from `commands`, `help_tags`, and `macros` are isolated per-Provider (same text in different Providers does not cross-contaminate)
-- [ ] Cycling the sorter away from `lua` disables Frecency reordering in the `on_change` path; cycling back to `lua` re-enables it
-- [ ] Existing tests still pass; new tests cover: commands on_change Frecency reorder path, commands `on_change` no-reorder under non-lua sorters, empty-query ordering for commands/help_tags/macros, provider isolation, macros inner-picker no-Frecency, `select_input` recording semantics
+- [x] `commands` provider passes `frecency = { provider = "commands", key_strategy = "text" }`
+- [x] Frecency reordering applies in the `on_change` callback path for commands when the `lua` Sorter is active — callback results are the base order, Frecency reorders within position-based neighborhoods for non-empty input
+- [x] Empty-query commands picker with `lua` sorter active shows frecent commands first (full frecency ordering)
+- [x] Frecency does NOT reorder command results when a non-`lua` sorter is active, when Provider identity is absent, when Frecency is globally disabled, or when per-provider Frecency is disabled
+- [x] Selecting a command records Frecency for that command text; reopening with `lua` sorter active shows it ranked higher
+- [x] `select_input` in the commands picker records only when the input exactly matches a ReferItem's `text` field in `current_matches`; arbitrary typed command text that doesn't match a completion does not record
+- [x] `help_tags` provider passes `frecency = { provider = "help_tags", key_strategy = "text" }`
+- [x] Selecting a help tag records Frecency; subsequent searches with `lua` sorter active show it ranked higher
+- [x] Empty-query help_tags picker with `lua` sorter active shows frecent tags first
+- [x] `macros` outer picker passes `frecency = { provider = "macros", key_strategy = "text" }`; inner macro-editing picker does NOT inherit or apply Frecency (the `frecency` option is stripped before the inner `refer.pick` call)
+- [x] Frecency keys from `commands`, `help_tags`, and `macros` are isolated per-Provider (same text in different Providers does not cross-contaminate)
+- [x] Cycling the sorter away from `lua` disables Frecency reordering in the `on_change` path; cycling back to `lua` re-enables it
+- [x] Existing tests still pass; new tests cover: commands on_change Frecency reorder path, commands `on_change` no-reorder under non-lua sorters, empty-query ordering for commands/help_tags/macros, provider isolation, macros inner-picker no-Frecency, `select_input` recording semantics
 
 ### Blocked by
 

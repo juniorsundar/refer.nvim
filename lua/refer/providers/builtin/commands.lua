@@ -185,6 +185,7 @@ local function commands(opts)
         vim.tbl_deep_extend("force", {
             prompt = "M-x > ",
             default_text = default_text,
+            frecency = { provider = "commands", key_strategy = "text" },
             keymaps = {
                 ["<C-p>"] = function(_, builtin)
                     cycle_history(builtin, 1)

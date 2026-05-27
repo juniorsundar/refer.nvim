@@ -1,3 +1,4 @@
 /.direnv
 /.pi/subagent-outputs
 /lua/refer/libblink_cmp_fuzzy.so
+/.pi

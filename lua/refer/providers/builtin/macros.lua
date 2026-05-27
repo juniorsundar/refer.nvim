@@ -83,6 +83,10 @@ local function macros(opts)
             vim.notify("Updated register '" .. reg .. "'")
         end
 
+        -- Strip frecency from parent opts: inner macro-editing picker is ephemeral
+        local inner_opts = vim.deepcopy(parent_opts or {})
+        inner_opts.frecency = nil
+
         refer.pick(
             {},
             save_macro,
@@ -101,7 +105,7 @@ local function macros(opts)
                     cleanup_preview()
                 end,
                 on_confirm = save_macro,
-            }, parent_opts or {})
+            }, inner_opts)
         )
 
         do_macro_preview(initial_content)
@@ -120,6 +124,7 @@ local function macros(opts)
         vim.tbl_deep_extend("force", {
             prompt = "Macros > ",
             preview = { enabled = false },
+            frecency = { provider = "macros", key_strategy = "text" },
             keymaps = {
                 ["<CR>"] = "select_entry",
                 ["<C-r>"] = function(refer_item, builtin)

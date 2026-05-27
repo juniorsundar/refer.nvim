@@ -150,4 +150,10 @@ function M.is_enabled()
     return config.enabled ~= false
 end
 
+---Get the configured neighborhood size.
+---@return number neighborhood_size
+function M.get_neighborhood_size()
+    return config.neighborhood_size or 10
+end
+
 return M
