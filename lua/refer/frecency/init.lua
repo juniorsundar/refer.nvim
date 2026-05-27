@@ -3,6 +3,15 @@ local score_mod = require "refer.frecency.score"
 
 local M = {}
 
+---@class FrecencyConfig
+---@field enabled? boolean
+---@field db_path? string
+---@field buckets? table[]|false
+---@field neighborhood_size? number
+---@field clock_fn? fun(): number
+---@field max_entries_per_provider? number
+---@field cleanup_max_age_days? number
+
 -- Module configuration (buckets and neighborhood_size are used by this module,
 -- db_path and clock_fn are passed through to db)
 local config = {
@@ -11,11 +20,23 @@ local config = {
     neighborhood_size = 10,
 }
 
+local cleanup_augroup = "ReferFrecencyCleanup"
+
+local function register_cleanup_autocmd()
+    local group = vim.api.nvim_create_augroup(cleanup_augroup, { clear = true })
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        group = group,
+        callback = function()
+            pcall(M.cleanup)
+        end,
+    })
+end
+
 ---Configure the frecency module.
----Accepts: enabled, db_path, buckets, neighborhood_size, clock_fn.
----db_path and clock_fn are passed through to the db module.
+---Accepts: enabled, db_path, buckets, neighborhood_size, clock_fn, cleanup_max_age_days, max_entries_per_provider.
+---db_path, clock_fn, and cleanup options are passed through to the db module.
 ---buckets, neighborhood_size, and enabled are stored for use in score/reorder.
----@param opts table
+---@param opts? FrecencyConfig
 function M.configure(opts)
     opts = opts or {}
 
@@ -29,12 +50,15 @@ function M.configure(opts)
     if opts.neighborhood_size ~= nil then
         config.neighborhood_size = opts.neighborhood_size
     end
-
     -- Pass through to db
     db.configure {
         db_path = opts.db_path,
         clock_fn = opts.clock_fn,
+        buckets = opts.buckets,
+        max_entries_per_provider = opts.max_entries_per_provider,
+        cleanup_max_age_days = opts.cleanup_max_age_days,
     }
+    register_cleanup_autocmd()
 end
 
 ---Record a selection event.
@@ -72,6 +96,15 @@ function M.score(provider, item_keys, opts)
         opts.buckets = config.buckets
     end
     return db.read_scores(provider, item_keys, opts)
+end
+
+---Run Frecency store cleanup.
+---@return boolean changed Whether cleanup rewrote the store
+function M.cleanup()
+    if not config.enabled or config.enabled == false then
+        return false
+    end
+    return db.cleanup()
 end
 
 ---Reorder items within fuzzy score neighborhoods by frecency.

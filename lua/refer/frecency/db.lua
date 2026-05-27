@@ -6,7 +6,12 @@ local db_path = nil
 local clock_fn = nil
 local noop_mode = false
 local warned_noop = false
+local warned_cleanup = false
 local noop_reason = nil
+local did_operate = false
+local max_entries_per_provider = 10000
+local cleanup_max_age_seconds = 180 * 86400
+local cleanup_buckets = nil
 
 local function default_store()
     return {
@@ -31,6 +36,14 @@ local function enter_noop(message)
     noop_mode = true
     noop_reason = message
     warn_once(message)
+end
+
+local function warn_cleanup_once(message)
+    if warned_cleanup then
+        return
+    end
+    warned_cleanup = true
+    vim.notify("[refer.frecency] " .. message, vim.log.levels.WARN)
 end
 
 local function now_sec()
@@ -103,8 +116,18 @@ local function load_store()
     return store
 end
 
-local function write_store(store)
+local function write_store(store, opts)
     if noop_mode then
+        return false
+    end
+
+    opts = opts or {}
+    local function fail(message)
+        if opts.no_noop then
+            warn_cleanup_once(message)
+        else
+            enter_noop(message)
+        end
         return false
     end
 
@@ -112,29 +135,25 @@ local function write_store(store)
     local dir = vim.fn.fnamemodify(path, ":h")
     local ok_mkdir, mkdir_err = pcall(vim.fn.mkdir, dir, "p")
     if not ok_mkdir then
-        enter_noop("Could not create store directory " .. dir .. ": " .. tostring(mkdir_err))
-        return false
+        return fail("Could not create store directory " .. dir .. ": " .. tostring(mkdir_err))
     end
 
     local ok_encode, encoded = pcall(vim.json.encode, store)
     if not ok_encode then
-        enter_noop("Could not encode JSON store: " .. tostring(encoded))
-        return false
+        return fail("Could not encode JSON store: " .. tostring(encoded))
     end
 
     local tmp_path = path .. ".tmp." .. tostring(vim.loop.hrtime())
     local ok_write, write_err = pcall(vim.fn.writefile, { encoded }, tmp_path)
     if not ok_write or write_err ~= 0 then
         pcall(vim.fn.delete, tmp_path)
-        enter_noop("Could not write temporary JSON store " .. tmp_path .. ": " .. tostring(write_err))
-        return false
+        return fail("Could not write temporary JSON store " .. tmp_path .. ": " .. tostring(write_err))
     end
 
     local ok_rename, rename_result = pcall(vim.fn.rename, tmp_path, path)
     if not ok_rename or rename_result ~= 0 then
         pcall(vim.fn.delete, tmp_path)
-        enter_noop("Could not replace JSON store at " .. path .. ": " .. tostring(rename_result))
-        return false
+        return fail("Could not replace JSON store at " .. path .. ": " .. tostring(rename_result))
     end
 
     return true
@@ -147,6 +166,15 @@ function M.configure(opts)
     end
     if opts.clock_fn then
         clock_fn = opts.clock_fn
+    end
+    if opts.max_entries_per_provider ~= nil then
+        max_entries_per_provider = opts.max_entries_per_provider
+    end
+    if opts.cleanup_max_age_days ~= nil then
+        cleanup_max_age_seconds = opts.cleanup_max_age_days * 86400
+    end
+    if opts.buckets ~= nil then
+        cleanup_buckets = (opts.buckets == false) and nil or opts.buckets
     end
 end
 
@@ -161,6 +189,8 @@ function M.record(provider, item_key, opts)
     if opts and opts.clock_fn then
         clock_fn = opts.clock_fn
     end
+
+    did_operate = true
 
     local store = load_store()
     if not store then
@@ -196,6 +226,8 @@ function M.read_scores(provider, item_keys, opts)
         clock_fn = opts.clock_fn
     end
 
+    did_operate = true
+
     local store = load_store()
     if not store then
         return {}
@@ -222,6 +254,81 @@ function M.read_scores(provider, item_keys, opts)
     return result
 end
 
+---@return boolean changed Whether cleanup rewrote the store
+function M.cleanup()
+    if noop_mode or not did_operate then
+        return false
+    end
+
+    local ok, changed = pcall(function()
+        local store = load_store()
+        if not store then
+            return false
+        end
+
+        local now = now_sec()
+        local store_changed = false
+        for _, provider_store in pairs(store.providers) do
+            if type(provider_store) == "table" then
+                for item_key, record in pairs(provider_store) do
+                    local last_selected = type(record) == "table" and tonumber(record.last_selected_at) or nil
+                    local age = last_selected and (now - last_selected) or math.huge
+                    if age > cleanup_max_age_seconds then
+                        provider_store[item_key] = nil
+                        store_changed = true
+                    end
+                end
+
+                local entries = {}
+                for item_key, record in pairs(provider_store) do
+                    if type(record) == "table" then
+                        local count = tonumber(record.selected_count) or 0
+                        local last_selected = tonumber(record.last_selected_at)
+                        local age = last_selected and (now - last_selected) or math.huge
+                        table.insert(entries, {
+                            item_key = item_key,
+                            selected_count = count,
+                            last_selected_at = last_selected or -math.huge,
+                            frecency = score.compute(count, age, cleanup_buckets),
+                        })
+                    end
+                end
+
+                if #entries > max_entries_per_provider then
+                    table.sort(entries, function(a, b)
+                        if a.frecency ~= b.frecency then
+                            return a.frecency < b.frecency
+                        end
+                        if a.last_selected_at ~= b.last_selected_at then
+                            return a.last_selected_at < b.last_selected_at
+                        end
+                        if a.selected_count ~= b.selected_count then
+                            return a.selected_count < b.selected_count
+                        end
+                        return a.item_key < b.item_key
+                    end)
+
+                    for i = 1, #entries - max_entries_per_provider do
+                        provider_store[entries[i].item_key] = nil
+                        store_changed = true
+                    end
+                end
+            end
+        end
+
+        if store_changed then
+            return write_store(store, { no_noop = true })
+        end
+        return false
+    end)
+
+    if not ok then
+        warn_cleanup_once("Cleanup failed: " .. tostring(changed))
+        return false
+    end
+    return changed or false
+end
+
 function M.is_available()
     return not noop_mode
 end
@@ -243,7 +350,12 @@ function M._reset()
     clock_fn = nil
     noop_mode = false
     warned_noop = false
+    warned_cleanup = false
     noop_reason = nil
+    did_operate = false
+    max_entries_per_provider = 10000
+    cleanup_max_age_seconds = 180 * 86400
+    cleanup_buckets = nil
 end
 
 return M

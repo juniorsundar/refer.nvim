@@ -65,6 +65,10 @@ describe("refer.frecency (init)", function()
         it("exposes status", function()
             assert.is_function(frecency.status)
         end)
+
+        it("exposes cleanup", function()
+            assert.is_function(frecency.cleanup)
+        end)
     end)
 
     describe("configure()", function()

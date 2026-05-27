@@ -120,6 +120,8 @@ local default_opts = {
     },
     frecency = {
         enabled = true,
+        max_entries_per_provider = 10000,
+        cleanup_max_age_days = 180,
     },
     extras = {},
     keymaps = {
@@ -164,9 +166,7 @@ function M.setup(opts)
         default_opts.extras = vim.deepcopy(opts.extras)
     end
     require("refer.extras").setup(default_opts.extras)
-    if opts.frecency then
-        require("refer.frecency").configure(opts.frecency)
-    end
+    require("refer.frecency").configure(default_opts.frecency or {})
 end
 
 ---Get combined options
