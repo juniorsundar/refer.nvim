@@ -6,15 +6,22 @@ local function temp_path()
 end
 
 local active_path
+local current_time = 0
 
 local function setup_frecency(opts)
-    opts = opts or {}
-    active_path = opts.db_path or temp_path()
-    opts.db_path = active_path
-    frecency.configure(opts)
+    local cfg = vim.deepcopy(opts or {})
+    active_path = cfg.db_path or temp_path()
+    cfg.db_path = active_path
+    if cfg.clock_fn == nil then
+        cfg.clock_fn = function()
+            return current_time
+        end
+    end
+    frecency.configure(cfg)
 end
 
 local function reset()
+    current_time = 0
     if active_path then
         vim.fn.delete(active_path, "rf")
         vim.fn.delete(vim.fn.fnamemodify(active_path, ":h"), "rf")
@@ -74,6 +81,7 @@ describe("refer.frecency (init)", function()
     describe("configure()", function()
         it("accepts db_path option", function()
             setup_frecency { db_path = temp_path() }
+            current_time = 1000
             frecency.record("p", "k")
             assert.is_true(vim.fn.filereadable(active_path) == 1)
         end)
@@ -83,16 +91,10 @@ describe("refer.frecency (init)", function()
                 buckets = { { max_age = 60, divisor = 1 }, { max_age = math.huge, divisor = 10 } },
             }
             local t = 1000
-            frecency.record("p", "item", {
-                clock_fn = function()
-                    return t
-                end,
-            })
-            local scores = frecency.score("p", { "item" }, {
-                clock_fn = function()
-                    return t + 120
-                end,
-            })
+            current_time = t
+            frecency.record("p", "item")
+            current_time = t + 120
+            local scores = frecency.score("p", { "item" })
             assert.are.equal(0.1, scores.item)
         end)
 
@@ -118,22 +120,17 @@ describe("refer.frecency (init)", function()
         it("records a selection via db.record", function()
             setup_frecency()
             local t = 1000000
-            frecency.record("test_provider", "test_key", {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            frecency.record("test_provider", "test_key")
 
-            local scores = frecency.score("test_provider", { "test_key" }, {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            local scores = frecency.score("test_provider", { "test_key" })
             assert.are.equal(1, scores.test_key)
         end)
 
         it("is a no-op when provider is nil", function()
             setup_frecency()
+            current_time = 1000
             frecency.record(nil, "key")
             assert.is_false(vim.fn.filereadable(active_path) == 1)
         end)
@@ -149,22 +146,13 @@ describe("refer.frecency (init)", function()
         it("returns a map of item_key → frecency_score", function()
             setup_frecency()
             local t = 1000000
-            frecency.record("p", "a", {
-                clock_fn = function()
-                    return t
-                end,
-            })
-            frecency.record("p", "b", {
-                clock_fn = function()
-                    return t - 3600
-                end,
-            })
+            current_time = t
+            frecency.record("p", "a")
+            current_time = t - 3600
+            frecency.record("p", "b")
 
-            local scores = frecency.score("p", { "a", "b" }, {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            local scores = frecency.score("p", { "a", "b" })
             assert.are.equal(1, scores.a)
             assert.are.equal(0.5, scores.b)
         end)
@@ -172,23 +160,18 @@ describe("refer.frecency (init)", function()
         it("keys without records are absent from the result", function()
             setup_frecency()
             local t = 1000000
-            frecency.record("p", "exists", {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            frecency.record("p", "exists")
 
-            local scores = frecency.score("p", { "exists", "missing" }, {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            local scores = frecency.score("p", { "exists", "missing" })
             assert.is_not_nil(scores.exists)
             assert.is_nil(scores.missing)
         end)
 
         it("returns empty table for empty item_keys", function()
             setup_frecency()
+            current_time = 1000
             local scores = frecency.score("p", {})
             assert.are.same({}, scores)
         end)
@@ -205,28 +188,16 @@ describe("refer.frecency (init)", function()
             setup_frecency()
             local t = 1000000
 
-            frecency.record("p", "a", {
-                clock_fn = function()
-                    return t - 604800
-                end,
-            })
-            frecency.record("p", "b", {
-                clock_fn = function()
-                    return t
-                end,
-            })
-            frecency.record("p", "c", {
-                clock_fn = function()
-                    return t - 86400
-                end,
-            })
+            current_time = t - 604800
+            frecency.record("p", "a")
+            current_time = t
+            frecency.record("p", "b")
+            current_time = t - 86400
+            frecency.record("p", "c")
 
             local items = { { text = "a" }, { text = "b" }, { text = "c" } }
-            local result = frecency.reorder("p", items, {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            local result = frecency.reorder("p", items)
 
             assert.are.same("b", result[1].text)
             assert.are.same("c", result[2].text)
@@ -237,23 +208,14 @@ describe("refer.frecency (init)", function()
             setup_frecency()
             local t = 1000000
 
-            frecency.record("p", "b", {
-                clock_fn = function()
-                    return t
-                end,
-            })
-            frecency.record("p", "a", {
-                clock_fn = function()
-                    return t - 604800
-                end,
-            })
+            current_time = t
+            frecency.record("p", "b")
+            current_time = t - 604800
+            frecency.record("p", "a")
 
             local items = { { text = "a" }, { text = "b" }, { text = "c" }, { text = "d" } }
-            local frec_scores = frecency.score("p", { "a", "b", "c", "d" }, {
-                clock_fn = function()
-                    return t
-                end,
-            })
+            current_time = t
+            local frec_scores = frecency.score("p", { "a", "b", "c", "d" })
             local result = frecency.reorder("p", items, {
                 scores = { a = 100, b = 100, c = 10, d = 10 },
                 frecency_scores = frec_scores,

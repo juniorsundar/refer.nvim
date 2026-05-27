@@ -33,15 +33,20 @@ end
 
 describe("refer.frecency cleanup", function()
     local path
+    local current_time
 
     before_each(function()
         path = temp_path()
+        current_time = 0
         db._reset()
         frecency.configure {
             enabled = true,
             buckets = false,
             neighborhood_size = 10,
             db_path = path,
+            clock_fn = function()
+                return current_time
+            end,
         }
     end)
 
@@ -60,16 +65,10 @@ describe("refer.frecency cleanup", function()
         local thirty_days = 30 * 86400
 
         frecency.configure { cleanup_max_age_days = 30 }
-        frecency.record("buffers", "old", {
-            clock_fn = function()
-                return now - thirty_days - 1
-            end,
-        })
-        frecency.record("buffers", "fresh", {
-            clock_fn = function()
-                return now - thirty_days
-            end,
-        })
+        current_time = now - thirty_days - 1
+        frecency.record("buffers", "old")
+        current_time = now - thirty_days
+        frecency.record("buffers", "fresh")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -90,26 +89,14 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 2,
             cleanup_max_age_days = 3650,
         }
-        frecency.record("files", "low", {
-            clock_fn = function()
-                return now - 604800
-            end,
-        })
-        frecency.record("files", "medium", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("files", "high", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("files", "high", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now - 604800
+        frecency.record("files", "low")
+        current_time = now
+        frecency.record("files", "medium")
+        current_time = now
+        frecency.record("files", "high")
+        current_time = now
+        frecency.record("files", "high")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -132,16 +119,10 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 1,
             cleanup_max_age_days = 3650,
         }
-        frecency.record("commands", "alpha", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("commands", "beta", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now
+        frecency.record("commands", "alpha")
+        current_time = now
+        frecency.record("commands", "beta")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -164,16 +145,10 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 1,
             cleanup_max_age_days = 3650,
         }
-        frecency.record("commands", "older", {
-            clock_fn = function()
-                return now - 10
-            end,
-        })
-        frecency.record("commands", "newer", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now - 10
+        frecency.record("commands", "older")
+        current_time = now
+        frecency.record("commands", "newer")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -196,21 +171,12 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 1,
             cleanup_max_age_days = 3650,
         }
-        frecency.record("commands", "lower_count", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("commands", "higher_count", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("commands", "higher_count", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now
+        frecency.record("commands", "lower_count")
+        current_time = now
+        frecency.record("commands", "higher_count")
+        current_time = now
+        frecency.record("commands", "higher_count")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -232,16 +198,10 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 2,
             cleanup_max_age_days = 3650,
         }
-        frecency.record("help_tags", "one", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("help_tags", "two", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now
+        frecency.record("help_tags", "one")
+        current_time = now
+        frecency.record("help_tags", "two")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -259,11 +219,8 @@ describe("refer.frecency cleanup", function()
     it("does not touch the store when globally disabled", function()
         local now = 2000000
 
-        frecency.record("buffers", "old", {
-            clock_fn = function()
-                return now - 365 * 86400
-            end,
-        })
+        current_time = now - 365 * 86400
+        frecency.record("buffers", "old")
         local before = read_lines(path)
         frecency.configure {
             enabled = false,
@@ -338,21 +295,12 @@ describe("refer.frecency cleanup", function()
     it("does not eagerly delete aged or stale entries during reads", function()
         local now = 2000000
 
-        frecency.record("buffers", "stale", {
-            clock_fn = function()
-                return now - 365 * 86400
-            end,
-        })
+        current_time = now - 365 * 86400
+        frecency.record("buffers", "stale")
         local before = read_lines(path)
 
-        assert.are.same(
-            {},
-            frecency.score("buffers", { "current" }, {
-                clock_fn = function()
-                    return now
-                end,
-            })
-        )
+        current_time = now
+        assert.are.same({}, frecency.score("buffers", { "current" }))
         assert.are.same(before, read_lines(path))
     end)
 
@@ -363,16 +311,10 @@ describe("refer.frecency cleanup", function()
             max_entries_per_provider = 1,
             cleanup_max_age_days = 30,
         }
-        frecency.record("buffers", "old", {
-            clock_fn = function()
-                return now - 365 * 86400
-            end,
-        })
-        frecency.record("buffers", "new", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        current_time = now - 365 * 86400
+        frecency.record("buffers", "old")
+        current_time = now
+        frecency.record("buffers", "new")
 
         local provider_store = read_json(path).providers.buffers
         assert.are.equal(2, table_size(provider_store))
@@ -386,11 +328,8 @@ describe("refer.frecency cleanup", function()
         local notifications = {}
 
         frecency.configure { cleanup_max_age_days = 30 }
-        frecency.record("buffers", "old", {
-            clock_fn = function()
-                return now - 365 * 86400
-            end,
-        })
+        current_time = now - 365 * 86400
+        frecency.record("buffers", "old")
         frecency.configure {
             clock_fn = function()
                 return now
@@ -419,6 +358,7 @@ describe("refer.frecency cleanup", function()
 
     it("accepts cleanup options through setup().frecency", function()
         local now = 2000000
+        local t = now
 
         refer.setup {
             frecency = {
@@ -426,30 +366,16 @@ describe("refer.frecency cleanup", function()
                 cleanup_max_age_days = 30,
                 max_entries_per_provider = 1,
                 clock_fn = function()
-                    return now
+                    return t
                 end,
             },
         }
-        frecency.record("buffers", "aged", {
-            clock_fn = function()
-                return now - 31 * 86400
-            end,
-        })
-        frecency.record("buffers", "lower", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("buffers", "higher", {
-            clock_fn = function()
-                return now
-            end,
-        })
-        frecency.record("buffers", "higher", {
-            clock_fn = function()
-                return now
-            end,
-        })
+        t = now - 31 * 86400
+        frecency.record("buffers", "aged")
+        t = now
+        frecency.record("buffers", "lower")
+        frecency.record("buffers", "higher")
+        frecency.record("buffers", "higher")
         frecency.configure {
             clock_fn = function()
                 return now

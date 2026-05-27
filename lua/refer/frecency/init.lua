@@ -35,6 +35,7 @@ end
 ---Configure the frecency module.
 ---Accepts: enabled, db_path, buckets, neighborhood_size, clock_fn, cleanup_max_age_days, max_entries_per_provider.
 ---db_path, clock_fn, and cleanup options are passed through to the db module.
+---Changing db_path invalidates the in-memory cache, forcing a fresh disk read on next access.
 ---buckets, neighborhood_size, and enabled are stored for use in score/reorder.
 ---@param opts? FrecencyConfig
 function M.configure(opts)
@@ -65,15 +66,14 @@ end
 ---No-op when provider or item_key is nil/empty, or when globally disabled.
 ---@param provider string|nil
 ---@param item_key string|nil
----@param opts? table { clock_fn = function|nil }
-function M.record(provider, item_key, opts)
+function M.record(provider, item_key)
     if not config.enabled or config.enabled == false then
         return
     end
     if not provider or provider == "" or not item_key or item_key == "" then
         return
     end
-    db.record(provider, item_key, opts)
+    db.record(provider, item_key)
 end
 
 ---Read frecency scores for multiple item keys within a provider.
@@ -81,21 +81,19 @@ end
 ---Keys without records are absent from the map.
 ---@param provider string
 ---@param item_keys string[]
----@param opts? table { clock_fn = function|nil }
 ---@return table<string, number>
-function M.score(provider, item_keys, opts)
+function M.score(provider, item_keys)
     if not config.enabled or config.enabled == false then
         return {}
     end
     if not provider or provider == "" or not item_keys or #item_keys == 0 then
         return {}
     end
-    opts = opts or {}
-    -- Pass configured buckets through to db for score computation
+    local db_opts = {}
     if config.buckets then
-        opts.buckets = config.buckets
+        db_opts.buckets = config.buckets
     end
-    return db.read_scores(provider, item_keys, opts)
+    return db.read_scores(provider, item_keys, db_opts)
 end
 
 ---Run Frecency store cleanup.
@@ -113,7 +111,7 @@ end
 ---and reordered within each neighborhood by frecency score.
 ---@param provider string
 ---@param items ReferItem[]|string[]
----@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil, key_strategy = string|fun(item: ReferItem): string, clock_fn = function|nil }
+---@param opts table { scores = table<string, number>|nil, frecency_scores = table<string, number>|nil, neighborhood_size = number|nil, key_strategy = string|fun(item: ReferItem): string }
 ---@return table reordered_items
 function M.reorder(provider, items, opts)
     opts = opts or {}
@@ -160,7 +158,6 @@ function M.reorder(provider, items, opts)
         end
         if #item_keys > 0 then
             frecency_scores = db.read_scores(provider, item_keys, {
-                clock_fn = opts.clock_fn,
                 buckets = config.buckets,
             })
         end

@@ -9,6 +9,7 @@ local warned_noop = false
 local warned_cleanup = false
 local noop_reason = nil
 local did_operate = false
+local cached_store = nil
 local max_entries_per_provider = 10000
 local cleanup_max_age_seconds = 180 * 86400
 local cleanup_buckets = nil
@@ -35,6 +36,7 @@ end
 local function enter_noop(message)
     noop_mode = true
     noop_reason = message
+    cached_store = nil
     warn_once(message)
 end
 
@@ -81,6 +83,9 @@ local function read_file(path)
 end
 
 local function load_store()
+    if cached_store ~= nil then
+        return cached_store
+    end
     if noop_mode then
         return nil
     end
@@ -92,7 +97,8 @@ local function load_store()
             enter_noop("Could not read JSON store at " .. path .. ": unreadable")
             return nil
         end
-        return default_store()
+        cached_store = default_store()
+        return cached_store
     end
 
     local content, read_err = read_file(path)
@@ -113,6 +119,7 @@ local function load_store()
         return nil
     end
 
+    cached_store = store
     return store
 end
 
@@ -163,6 +170,7 @@ function M.configure(opts)
     opts = opts or {}
     if opts.db_path then
         db_path = opts.db_path
+        cached_store = nil
     end
     if opts.clock_fn then
         clock_fn = opts.clock_fn
@@ -178,16 +186,9 @@ function M.configure(opts)
     end
 end
 
-function M.record(provider, item_key, opts)
+function M.record(provider, item_key)
     if not provider or provider == "" or not item_key or item_key == "" then
         return
-    end
-
-    -- [TEST-ONLY] opts.clock_fn mutates the module-level clock_fn.
-    -- This is a test injection mechanism; production code should pass
-    -- clock_fn via configure() only. See M.configure().
-    if opts and opts.clock_fn then
-        clock_fn = opts.clock_fn
     end
 
     did_operate = true
@@ -196,6 +197,8 @@ function M.record(provider, item_key, opts)
     if not store then
         return
     end
+
+    cached_store = store
 
     local providers = store.providers
     providers[provider] = providers[provider] or {}
@@ -211,19 +214,14 @@ function M.record(provider, item_key, opts)
         }
     end
 
-    write_store(store)
+    if not write_store(cached_store) then
+        cached_store = nil
+    end
 end
 
 function M.read_scores(provider, item_keys, opts)
     if not provider or provider == "" or not item_keys or #item_keys == 0 then
         return {}
-    end
-
-    -- [TEST-ONLY] opts.clock_fn mutates the module-level clock_fn.
-    -- This is a test injection mechanism; production code should pass
-    -- clock_fn via configure() only. See M.configure().
-    if opts and opts.clock_fn then
-        clock_fn = opts.clock_fn
     end
 
     did_operate = true
@@ -353,6 +351,7 @@ function M._reset()
     warned_cleanup = false
     noop_reason = nil
     did_operate = false
+    cached_store = nil
     max_entries_per_provider = 10000
     cleanup_max_age_seconds = 180 * 86400
     cleanup_buckets = nil
