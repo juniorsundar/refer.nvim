@@ -122,6 +122,7 @@ Use `:Refer <subcommand>` to launch pickers:
 
 ## Tutorials & Advanced Usage
 
+- [Frecency](#frecency)
 - [Replacing `vim.ui.select`](#replacing-vimuiselect)
 - [Custom Keymaps](#custom-keymaps)
 - [Bring Your Own Fuzzy (Custom Sorters)](#bring-your-own-fuzzy-custom-sorters)
@@ -134,6 +135,27 @@ Use `:Refer <subcommand>` to launch pickers:
   - [Enabling Previews for Custom Items](#enabling-previews-for-custom-items)
 - [Creating Extensions](#creating-extensions)
 - [Enabling Built-in Extras](#enabling-built-in-extras)
+
+### Frecency
+Frecency history is recorded per Provider and applies to the built-in `lua`
+sorter. History is stored as JSON under `stdpath("data") .. "/refer/frecency.json"`
+by default and is cleaned on `VimLeavePre` after Frecency has been used in the
+session.
+
+```lua
+require("refer").setup({
+    frecency = {
+        enabled = true,
+        max_entries_per_provider = 10000,
+        cleanup_max_age_days = 180,
+    },
+})
+```
+
+Cleanup removes records older than `cleanup_max_age_days` and caps each Provider
+to `max_entries_per_provider` entries. If the store is corrupt or unavailable,
+Frecency degrades to a no-op for the session and picker behavior continues
+normally.
 
 ### Replacing `vim.ui.select`
 Use `refer` as the interface for `vim.ui.select` (used by code actions and
@@ -535,6 +557,16 @@ require("refer").setup({
         grep = {
             grep_command = { "rg", "--vimgrep", "--smart-case" },
         },
+    },
+
+    -- Frecency history for the lua sorter
+    frecency = {
+        enabled = true,
+        max_entries_per_provider = 10000,
+        cleanup_max_age_days = 180,
+        -- db_path = vim.fn.stdpath("data") .. "/refer/frecency.json",
+        -- buckets = { { max_age = 3600, divisor = 1 }, ... },
+        -- neighborhood_size = 10,
     },
 
     -- Extras (all disabled by default)

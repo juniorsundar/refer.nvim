@@ -1,1 +1,0 @@
-We currently have a basic fuzzy sorter algorithm already set up in [here](./lua/refer/fuzzy.lua). I would like to improve upon it and bring it up to speed with the standards currently in place that include features like frecency, etc.
