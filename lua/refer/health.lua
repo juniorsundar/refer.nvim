@@ -7,6 +7,8 @@ local warn = health.warn or health.report_warn
 local error = health.error or health.report_error
 local info = health.info or health.report_info
 
+---Run the health check for refer.nvim.
+---@return nil
 function M.check()
     start "refer.nvim"
 
@@ -96,6 +98,21 @@ function M.check()
         end
     else
         error "Could not load refer.blink module"
+    end
+
+    local has_frecency, frecency = pcall(require, "refer.frecency")
+    if has_frecency then
+        local status = frecency.status()
+        if status.active then
+            ok "Frecency available: JSON store usable, globally enabled; applies only to Providers using the `lua` sorter"
+            info("Frecency store path: " .. status.db_path)
+        elseif not status.enabled then
+            info "Frecency disabled by user config"
+            info("Frecency store path: " .. status.db_path)
+        elseif status.no_op then
+            warn("Frecency unavailable: " .. (status.reason or "unknown failure"))
+            warn("Frecency store path: " .. status.db_path)
+        end
     end
 end
 

@@ -7,6 +7,7 @@ describe("refer.health", function()
     local executable_stub
     local system_stub
     local refer_stub
+    local frecency_stub
     local blink_stub
 
     local function load_health()
@@ -50,6 +51,9 @@ describe("refer.health", function()
         end
         if blink_stub then
             package.loaded["refer.blink"] = blink_stub
+        end
+        if frecency_stub then
+            package.loaded["refer.frecency"] = frecency_stub
         end
     end)
 
@@ -194,5 +198,139 @@ describe("refer.health", function()
 
         assert.is_true(vim.tbl_contains(messages "info", "Files command is a custom function"))
         assert.is_true(vim.tbl_contains(messages "info", "Grep command is a custom function"))
+    end)
+
+    describe("frecency health", function()
+        local status_stub
+
+        before_each(function()
+            executable_stub = stub(vim.fn, "executable", function()
+                return 1
+            end)
+            system_stub = stub(vim.fn, "system", function()
+                return ""
+            end)
+
+            refer_stub = package.loaded["refer"]
+            package.loaded["refer"] = {
+                get_opts = function()
+                    return {
+                        providers = {
+                            files = { find_command = { "fd" } },
+                            grep = { grep_command = { "rg" } },
+                        },
+                    }
+                end,
+            }
+
+            frecency_stub = package.loaded["refer.frecency"]
+
+            blink_stub = package.loaded["refer.blink"]
+            package.loaded["refer.blink"] = {
+                is_available = function()
+                    return true
+                end,
+            }
+        end)
+
+        after_each(function()
+            if status_stub then
+                local fresh_frecency = package.loaded["refer.frecency"]
+                if fresh_frecency then
+                    fresh_frecency.status = status_stub
+                end
+                status_stub = nil
+            end
+        end)
+
+        local function mock_status(status)
+            local fresh_frecency = require "refer.frecency"
+            status_stub = fresh_frecency.status
+            fresh_frecency.status = function()
+                return status
+            end
+            package.loaded["refer.frecency"] = fresh_frecency
+        end
+
+        it("reports OK when frecency is active with capability language and db_path", function()
+            mock_status {
+                enabled = true,
+                store_available = true,
+                active = true,
+                no_op = false,
+                reason = nil,
+                db_path = "/tmp/test_frecency.json",
+            }
+
+            health = load_health()
+            health.check()
+
+            local ok_msgs = messages "ok"
+            local found = false
+            for _, msg in ipairs(ok_msgs) do
+                if msg:find("Frecency available", 1, true) then
+                    found = true
+                    break
+                end
+            end
+            assert.is_true(found)
+            local info_msgs = messages "info"
+            assert.is_true(vim.tbl_contains(info_msgs, "Frecency store path: /tmp/test_frecency.json"))
+        end)
+
+        it("reports WARN when frecency is in no-op mode with failure reason", function()
+            mock_status {
+                enabled = true,
+                store_available = false,
+                active = false,
+                no_op = true,
+                reason = "corrupt store",
+                db_path = "/tmp/test_frecency.json",
+            }
+
+            health = load_health()
+            health.check()
+
+            local warn_msgs = messages "warn"
+            assert.is_true(vim.tbl_contains(warn_msgs, "Frecency unavailable: corrupt store"))
+            assert.is_true(vim.tbl_contains(warn_msgs, "Frecency store path: /tmp/test_frecency.json"))
+        end)
+
+        it("reports frecency as disabled when globally configured off", function()
+            mock_status {
+                enabled = false,
+                store_available = false,
+                active = false,
+                no_op = false,
+                reason = "disabled by config",
+                db_path = "/tmp/test_frecency.json",
+            }
+
+            health = load_health()
+            health.check()
+
+            local info_msgs = messages "info"
+            assert.is_true(vim.tbl_contains(info_msgs, "Frecency disabled by user config"))
+            assert.is_true(vim.tbl_contains(info_msgs, "Frecency store path: /tmp/test_frecency.json"))
+        end)
+
+        it("prefers disabled health when disabled status also has no-op", function()
+            mock_status {
+                enabled = false,
+                store_available = false,
+                active = false,
+                no_op = true,
+                reason = "disabled by config",
+                db_path = "/tmp/test_frecency.json",
+            }
+
+            health = load_health()
+            health.check()
+
+            local info_msgs = messages "info"
+            local warn_msgs = messages "warn"
+            assert.is_true(vim.tbl_contains(info_msgs, "Frecency disabled by user config"))
+            assert.is_false(vim.tbl_contains(warn_msgs, "Frecency unavailable: disabled by config"))
+        end)
     end)
 end)

@@ -206,6 +206,37 @@ describe("refer.providers.files", function()
             assert.are.same(abs1, result[2].data.filename)
         end)
 
+        it("does NOT apply frecency reorder in post_process when per-provider frecency is disabled", function()
+            local captured_opts = nil
+            local orig_pick_async = refer.pick_async
+            refer.pick_async = function(cmd_gen, _, opts)
+                captured_opts = opts
+                return {}
+            end
+
+            files.files { default_sorter = "lua", frecency = { enabled = false } }
+
+            refer.pick_async = orig_pick_async
+
+            assert.is_not_nil(captured_opts)
+            assert.is_not_nil(captured_opts.post_process)
+
+            local cwd = vim.fn.getcwd()
+            local rel1 = "a_file.lua"
+            local rel2 = "b_file.lua"
+            local abs1 = vim.fn.fnamemodify(cwd .. "/" .. rel1, ":p")
+            local abs2 = vim.fn.fnamemodify(cwd .. "/" .. rel2, ":p")
+
+            frecency.record("files", abs2)
+            frecency.record("files", abs2)
+
+            local result = captured_opts.post_process({ rel1, rel2 }, "")
+
+            assert.are.same(2, #result)
+            assert.are.same(abs1, result[1].data.filename)
+            assert.are.same(abs2, result[2].data.filename)
+        end)
+
         it("does NOT apply frecency reorder in post_process when non-lua sorter is active", function()
             local captured_opts = nil
             local orig_pick_async = refer.pick_async

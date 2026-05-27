@@ -6,6 +6,7 @@ local db_path = nil
 local clock_fn = nil
 local noop_mode = false
 local warned_noop = false
+local noop_reason = nil
 
 local function default_store()
     return {
@@ -28,6 +29,7 @@ end
 
 local function enter_noop(message)
     noop_mode = true
+    noop_reason = message
     warn_once(message)
 end
 
@@ -72,6 +74,11 @@ local function load_store()
 
     local path = resolved_path()
     if vim.fn.filereadable(path) == 0 then
+        local ftype = vim.fn.getftype(path)
+        if ftype ~= "" and ftype ~= "dir" then
+            enter_noop("Could not read JSON store at " .. path .. ": unreadable")
+            return nil
+        end
         return default_store()
     end
 
@@ -219,11 +226,24 @@ function M.is_available()
     return not noop_mode
 end
 
+---Return the resolved JSON store path (even when disabled).
+---@return string
+function M.get_path()
+    return resolved_path()
+end
+
+---Return the reason for entering no-op mode, or nil if not in no-op.
+---@return string|nil
+function M.get_noop_reason()
+    return noop_reason
+end
+
 function M._reset()
     db_path = nil
     clock_fn = nil
     noop_mode = false
     warned_noop = false
+    noop_reason = nil
 end
 
 return M

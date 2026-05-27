@@ -38,11 +38,14 @@ function M.configure(opts)
 end
 
 ---Record a selection event.
----No-op when provider or item_key is nil/empty.
+---No-op when provider or item_key is nil/empty, or when globally disabled.
 ---@param provider string|nil
 ---@param item_key string|nil
 ---@param opts? table { clock_fn = function|nil }
 function M.record(provider, item_key, opts)
+    if not config.enabled or config.enabled == false then
+        return
+    end
     if not provider or provider == "" or not item_key or item_key == "" then
         return
     end
@@ -57,6 +60,9 @@ end
 ---@param opts? table { clock_fn = function|nil }
 ---@return table<string, number>
 function M.score(provider, item_keys, opts)
+    if not config.enabled or config.enabled == false then
+        return {}
+    end
     if not provider or provider == "" or not item_keys or #item_keys == 0 then
         return {}
     end
@@ -78,6 +84,20 @@ end
 ---@return table reordered_items
 function M.reorder(provider, items, opts)
     opts = opts or {}
+
+    -- Nil/empty items: no-op
+    if not items or type(items) ~= "table" then
+        return {}
+    end
+
+    -- Globally disabled: return items unchanged
+    if not config.enabled or config.enabled == false then
+        return items
+    end
+
+    if not db.is_available() then
+        return items
+    end
 
     -- Nil/empty provider: no-op
     if not provider or provider == "" then
@@ -148,6 +168,32 @@ end
 ---@return boolean
 function M.is_enabled()
     return config.enabled ~= false
+end
+
+---Return the current frecency status as a structured table.
+---Shape: { enabled, store_available, active, no_op, reason, db_path }
+---@return table
+function M.status()
+    local enabled = config.enabled ~= false
+    local no_op = enabled and not db.is_available()
+    local store_available = enabled and not no_op
+    local active = enabled and not no_op
+
+    local reason = nil
+    if not enabled then
+        reason = "disabled by config"
+    elseif no_op then
+        reason = db.get_noop_reason()
+    end
+
+    return {
+        enabled = enabled,
+        store_available = store_available,
+        active = active,
+        no_op = no_op,
+        reason = reason,
+        db_path = db.get_path(),
+    }
 end
 
 ---Get the configured neighborhood size.

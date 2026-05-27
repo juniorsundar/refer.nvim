@@ -9,6 +9,7 @@ describe("Frecency regression end-to-end tracer", function()
     local function setup_frecency()
         active_frecency_path = vim.fn.tempname() .. "_e2e_test.json"
         frecency.configure {
+            enabled = true,
             db_path = active_frecency_path,
             buckets = false,
             neighborhood_size = 10,
@@ -178,5 +179,52 @@ describe("Frecency regression end-to-end tracer", function()
 
         -- Clean up the bad directory
         vim.fn.delete(bad_path, "rf")
+    end)
+
+    it("global disable takes precedence over corrupt store", function()
+        -- Write corrupt JSON
+        vim.fn.mkdir(vim.fn.fnamemodify(active_frecency_path, ":h"), "p")
+        vim.fn.writefile({ "{not json" }, active_frecency_path)
+
+        -- Globally disable frecency
+        frecency.configure { enabled = false, db_path = active_frecency_path }
+
+        -- Status should show disabled, not no-op
+        local s = frecency.status()
+        assert.is_false(s.enabled)
+        assert.is_false(s.active)
+        assert.is_false(s.no_op)
+        assert.are.equal("disabled by config", s.reason)
+
+        -- record() should be a no-op without touching store
+        frecency.record("p", "key")
+        -- File should still be corrupt (untouched)
+        assert.are.same({ "{not json" }, vim.fn.readfile(active_frecency_path))
+
+        -- score() should return empty (not trigger no-op from corrupt file)
+        local scores = frecency.score("p", { "key" })
+        assert.are.same({}, scores)
+    end)
+
+    it("picker survives when frecency is globally disabled", function()
+        frecency.configure { enabled = false, db_path = active_frecency_path }
+
+        picker = refer.pick({ "item_a", "item_b" }, function() end, {
+            default_sorter = "lua",
+            frecency = { provider = "e2e_disabled" },
+        })
+
+        vim.wait(500, function()
+            return #picker.current_matches == 2
+        end)
+
+        -- Items should be in original order (no reorder)
+        assert.are.equal("item_a", picker.current_matches[1].text)
+        assert.are.equal("item_b", picker.current_matches[2].text)
+
+        -- Selecting should not crash
+        picker.actions.select_entry()
+        vim.wait(100)
+        picker = nil
     end)
 end)

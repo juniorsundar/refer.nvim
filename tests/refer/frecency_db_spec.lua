@@ -311,6 +311,43 @@ describe("refer.frecency.db", function()
             assert.are.same({ "{not json" }, vim.fn.readfile(path))
         end)
 
+        it("enters no-op mode on unreadable JSON store and leaves file untouched", function()
+            vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+            local original_content = vim.json.encode {
+                version = 1,
+                providers = {
+                    p = {
+                        k = { selected_count = 1, last_selected_at = 1000 },
+                    },
+                },
+            }
+            vim.fn.writefile({ original_content }, path)
+            vim.fn.setfperm(path, "---------")
+
+            local original_notify = vim.notify
+            local notifications = {}
+            vim.notify = function(message, level)
+                table.insert(notifications, { message = message, level = level })
+            end
+
+            local scores = db.read_scores("p", { "k" })
+            db.record("p", "other", {
+                clock_fn = function()
+                    return 2000
+                end,
+            })
+
+            vim.notify = original_notify
+            vim.fn.setfperm(path, "rw-r--r--")
+
+            assert.are.same({}, scores)
+            assert.is_false(db.is_available())
+            assert.are.same({ original_content }, vim.fn.readfile(path))
+            assert.are.same(1, #notifications)
+            assert.are.same(vim.log.levels.WARN, notifications[1].level)
+            assert.is_true(notifications[1].message:find("Could not read JSON store", 1, true) ~= nil)
+        end)
+
         it("enters no-op mode when atomic rename fails", function()
             local dir_path = temp_path "_as_dir"
             path = dir_path
@@ -325,6 +362,55 @@ describe("refer.frecency.db", function()
             })
             assert.is_false(db.is_available())
             assert.is_true(vim.fn.isdirectory(path) == 1)
+        end)
+
+        it("subsequent record() after noop mode does not retry or touch store", function()
+            vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+            vim.fn.writefile({ "{not json" }, path)
+
+            local scores = db.read_scores("p", { "k" })
+            assert.are.same({}, scores)
+            assert.is_false(db.is_available())
+            local original_content = vim.fn.readfile(path)
+
+            -- Subsequent operations should be no-ops
+            db.record("p", "k2", {
+                clock_fn = function()
+                    return 1000
+                end,
+            })
+            local scores2 = db.read_scores("p", { "k2" })
+            assert.are.same({}, scores2)
+
+            -- File should be untouched
+            assert.are.same(original_content, vim.fn.readfile(path))
+        end)
+
+        it("subsequent record() after write-failure noop does not retry", function()
+            local dir_path = temp_path "_as_dir"
+            path = dir_path
+            vim.fn.mkdir(path, "p")
+            db._reset()
+            configure_json(path)
+
+            db.record("p", "k", {
+                clock_fn = function()
+                    return 1000
+                end,
+            })
+            assert.is_false(db.is_available())
+
+            -- Remove the blocking directory so write would succeed IF we retried
+            vim.fn.delete(path, "rf")
+
+            -- Subsequent operation should still be a no-op
+            db.record("p", "k2", {
+                clock_fn = function()
+                    return 2000
+                end,
+            })
+            -- No file should have been created
+            assert.is_true(vim.fn.filereadable(path) == 0)
         end)
     end)
 

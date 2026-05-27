@@ -92,7 +92,13 @@ function M.files(opts)
                     })
                 end
                 local matches, scores = fuzzy.filter(items, query, { sorter = sorter })
-                if sorter == "lua" and frecency.is_enabled() and frecency.is_available() then
+                local file_frecency = opts.frecency or {}
+                if
+                    sorter == "lua"
+                    and file_frecency.enabled ~= false
+                    and frecency.is_enabled()
+                    and frecency.is_available()
+                then
                     matches = frecency.reorder("files", matches, {
                         scores = scores,
                         key_strategy = "filepath",

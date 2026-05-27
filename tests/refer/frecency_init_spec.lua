@@ -22,6 +22,7 @@ local function reset()
     end
     db._reset()
     frecency.configure {
+        enabled = true,
         buckets = false,
         neighborhood_size = 10,
     }
@@ -59,6 +60,10 @@ describe("refer.frecency (init)", function()
 
         it("exposes is_available", function()
             assert.is_function(frecency.is_available)
+        end)
+
+        it("exposes status", function()
+            assert.is_function(frecency.status)
         end)
     end)
 
@@ -277,6 +282,29 @@ describe("refer.frecency (init)", function()
             local result = frecency.reorder("p", {}, { scores = { a = 10 } })
             assert.are.same({}, result)
         end)
+
+        it("returns empty table for nil items", function()
+            setup_frecency()
+            local result = frecency.reorder("p", nil, { scores = { a = 10 } })
+            assert.are.same({}, result)
+        end)
+
+        it("returns items unchanged after no-op mode even with supplied frecency_scores", function()
+            setup_frecency()
+            vim.fn.mkdir(vim.fn.fnamemodify(active_path, ":h"), "p")
+            vim.fn.writefile({ "{not json" }, active_path)
+            frecency.score("p", { "a" })
+            assert.is_false(frecency.is_available())
+
+            local items = { { text = "a" }, { text = "b" } }
+            local result = frecency.reorder("p", items, {
+                scores = { a = 100, b = 100 },
+                frecency_scores = { b = 10 },
+            })
+
+            assert.are.same("a", result[1].text)
+            assert.are.same("b", result[2].text)
+        end)
     end)
 
     describe("resolve_key()", function()
@@ -311,6 +339,144 @@ describe("refer.frecency (init)", function()
             frecency.configure { db_path = bad_path }
             frecency.record("p", "k")
             assert.is_false(frecency.is_available())
+        end)
+    end)
+
+    describe("status()", function()
+        it("returns disabled shape when globally disabled", function()
+            local test_path = temp_path()
+            active_path = test_path
+            frecency.configure { enabled = false, db_path = test_path }
+
+            local s = frecency.status()
+            assert.is_table(s)
+            assert.is_false(s.enabled)
+            assert.is_false(s.store_available)
+            assert.is_false(s.active)
+            assert.is_false(s.no_op)
+            assert.are.equal("disabled by config", s.reason)
+            assert.are.equal(test_path, s.db_path)
+        end)
+
+        it("returns active shape when store is available and enabled", function()
+            local test_path = temp_path()
+            active_path = test_path
+            frecency.configure { enabled = true, db_path = test_path }
+
+            local s = frecency.status()
+            assert.is_true(s.enabled)
+            assert.is_true(s.store_available)
+            assert.is_true(s.active)
+            assert.is_false(s.no_op)
+            assert.is_nil(s.reason)
+            assert.are.equal(test_path, s.db_path)
+        end)
+
+        it("returns no-op shape with reason after corrupt JSON store", function()
+            local test_path = temp_path()
+            active_path = test_path
+            -- Write corrupt JSON to trigger no-op mode
+            vim.fn.mkdir(vim.fn.fnamemodify(test_path, ":h"), "p")
+            vim.fn.writefile({ "{not json" }, test_path)
+            frecency.configure { enabled = true, db_path = test_path }
+
+            -- Trigger read failure
+            frecency.score("p", { "key" })
+
+            local s = frecency.status()
+            assert.is_true(s.enabled)
+            assert.is_false(s.store_available)
+            assert.is_false(s.active)
+            assert.is_true(s.no_op)
+            assert.is_not_nil(s.reason)
+            assert.are.equal(test_path, s.db_path)
+        end)
+
+        it("returns no-op shape with reason after write failure", function()
+            local test_path = temp_path() .. "_dir"
+            active_path = test_path
+            -- Create a directory at the path to cause write failure (rename fails)
+            vim.fn.mkdir(test_path, "p")
+            frecency.configure { enabled = true, db_path = test_path }
+
+            -- Trigger write failure
+            frecency.record("p", "key")
+
+            local s = frecency.status()
+            assert.is_true(s.enabled)
+            assert.is_false(s.store_available)
+            assert.is_false(s.active)
+            assert.is_true(s.no_op)
+            assert.is_not_nil(s.reason)
+            assert.are.equal(test_path, s.db_path)
+
+            -- Cleanup
+            vim.fn.delete(test_path, "rf")
+        end)
+
+        it("reports disabled by config after prior no-op mode", function()
+            local test_path = temp_path()
+            active_path = test_path
+            vim.fn.mkdir(vim.fn.fnamemodify(test_path, ":h"), "p")
+            vim.fn.writefile({ "{not json" }, test_path)
+            frecency.configure { enabled = true, db_path = test_path }
+            frecency.score("p", { "key" })
+            assert.is_false(frecency.is_available())
+
+            frecency.configure { enabled = false }
+
+            local s = frecency.status()
+            assert.is_false(s.enabled)
+            assert.is_false(s.store_available)
+            assert.is_false(s.active)
+            assert.is_false(s.no_op)
+            assert.are.equal("disabled by config", s.reason)
+            assert.are.equal(test_path, s.db_path)
+        end)
+    end)
+
+    describe("global disable", function()
+        it("record() is a no-op and does not create store files", function()
+            local test_path = temp_path()
+            active_path = test_path
+            frecency.configure { enabled = false, db_path = test_path }
+
+            frecency.record("p", "k")
+            assert.is_false(vim.fn.filereadable(test_path) == 1)
+        end)
+
+        it("score() returns empty table when globally disabled", function()
+            local test_path = temp_path()
+            active_path = test_path
+            frecency.configure { enabled = false, db_path = test_path }
+
+            -- First record something to ensure there IS data in the store
+            frecency.configure { enabled = true, db_path = test_path }
+            frecency.record("p", "key")
+            -- Then disable
+            frecency.configure { enabled = false }
+
+            local scores = frecency.score("p", { "key" })
+            assert.are.same({}, scores)
+        end)
+
+        it("reorder() returns items unchanged when globally disabled", function()
+            local test_path = temp_path()
+            active_path = test_path
+            frecency.configure { enabled = true, db_path = test_path }
+            -- Record to create a frecency score for "b"
+            frecency.record("p", "b")
+            -- Then disable
+            frecency.configure { enabled = false }
+
+            -- Same fuzzy scores → same neighborhood, frecency would normally promote "b"
+            local items = { { text = "a" }, { text = "b" } }
+            local result = frecency.reorder("p", items, {
+                scores = { a = 100, b = 100 },
+            })
+            -- With global disable, reorder should NOT apply frecency → original order
+            assert.are.same("a", result[1].text)
+            assert.are.same("b", result[2].text)
         end)
     end)
 

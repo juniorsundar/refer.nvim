@@ -41,23 +41,23 @@ Health language must be capability-based ("Frecency available: JSON store usable
 
 ### Acceptance criteria
 
-- [ ] Setting `frecency.enabled = false` in `setup()` disables all Frecency recording, reordering, and store access across all Providers
-- [ ] Globally disabling Frecency prevents directory creation, JSON reads, JSON writes, and persistence logging — no store operations at all
-- [ ] Per-provider `frecency.enabled = false` disables Frecency for that Provider only, while other Providers continue normally
-- [ ] When both global and per-provider settings conflict, global `false` takes precedence — no Frecency anywhere
-- [ ] `frecency.status()` returns a table with `enabled`, `store_available`, `active`, `no_op`, `reason`, and `db_path` fields
-- [ ] Health check reports Frecency as available when the JSON store is usable and Frecency is enabled, using capability-based language ("applies only to Providers using the `lua` sorter")
-- [ ] Health check reports Frecency as degraded/unavailable when JSON persistence has failed, with an explanation
-- [ ] Health check reports Frecency as disabled when globally configured off, without logging persistence notices
-- [ ] Health check reports session no-op mode with the failure reason when a runtime failure has occurred
-- [ ] Health check shows the resolved store path (default or override) in all states
-- [ ] JSON store initialization is deferred until first Frecency operation, not on plugin load
-- [ ] If first-operation store initialization fails (directory creation, file creation, permission), Frecency logs one-time WARN, enters session no-op mode, and subsequent operations are no-ops without retrying
-- [ ] If the JSON store is corrupt or unreadable, Frecency logs one-time WARN, leaves the file untouched, and enters session no-op mode
-- [ ] If a JSON write or atomic rename fails, Frecency logs one-time WARN and enters session no-op mode; further operations do not touch the store
-- [ ] After entering no-op mode, subsequent `record`, `score`, and `reorder` calls are no-ops that do not touch the store
-- [ ] The picker remains functional and responsive regardless of Frecency persistence state; after a write failure, subsequent picker refreshes do not touch the store
-- [ ] Existing tests still pass; new tests cover: global disable (no store access), per-provider opt-out, `status()` return shape in each state, health check output for available/disabled/degraded, first-use init failure, corrupt store, write failure and session no-op, precedence (global disabled + corrupt store), db_path display in all states
+- [x] Setting `frecency.enabled = false` in `setup()` disables all Frecency recording, reordering, and store access across all Providers
+- [x] Globally disabling Frecency prevents directory creation, JSON reads, JSON writes, and persistence logging — no store operations at all
+- [x] Per-provider `frecency.enabled = false` disables Frecency for that Provider only, while other Providers continue normally
+- [x] When both global and per-provider settings conflict, global `false` takes precedence — no Frecency anywhere
+- [x] `frecency.status()` returns a table with `enabled`, `store_available`, `active`, `no_op`, `reason`, and `db_path` fields
+- [x] Health check reports Frecency as available when the JSON store is usable and Frecency is enabled, using capability-based language ("applies only to Providers using the `lua` sorter")
+- [x] Health check reports Frecency as degraded/unavailable when JSON persistence has failed, with an explanation
+- [x] Health check reports Frecency as disabled when globally configured off, without logging persistence notices
+- [x] Health check reports session no-op mode with the failure reason when a runtime failure has occurred
+- [x] Health check shows the resolved store path (default or override) in all states
+- [x] JSON store initialization is deferred until first Frecency operation, not on plugin load
+- [x] If first-operation store initialization fails (directory creation, file creation, permission), Frecency logs one-time WARN, enters session no-op mode, and subsequent operations are no-ops without retrying
+- [x] If the JSON store is corrupt or unreadable, Frecency logs one-time WARN, leaves the file untouched, and enters session no-op mode
+- [x] If a JSON write or atomic rename fails, Frecency logs one-time WARN and enters session no-op mode; further operations do not touch the store
+- [x] After entering no-op mode, subsequent `record`, `score`, and `reorder` calls are no-ops that do not touch the store
+- [x] The picker remains functional and responsive regardless of Frecency persistence state; after a write failure, subsequent picker refreshes do not touch the store
+- [x] Existing tests still pass; new tests cover: global disable (no store access), per-provider opt-out, `status()` return shape in each state, health check output for available/disabled/degraded, first-use init failure, corrupt store, write failure and session no-op, precedence (global disabled + corrupt store), db_path display in all states
 
 ### Blocked by
 
