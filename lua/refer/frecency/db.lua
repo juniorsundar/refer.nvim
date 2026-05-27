@@ -107,6 +107,11 @@ local function load_store()
         return nil
     end
 
+    if content:match "^%s*$" then
+        cached_store = default_store()
+        return cached_store
+    end
+
     local ok, decoded = pcall(vim.json.decode, content)
     if not ok then
         enter_noop("Could not decode JSON store at " .. path .. ": " .. tostring(decoded))

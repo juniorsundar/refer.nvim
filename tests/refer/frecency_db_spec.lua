@@ -581,6 +581,24 @@ describe("refer.frecency.db", function()
             assert.are.equal(1, store.providers.p.first_item.selected_count)
         end)
 
+        it("normalizes and caches a true empty JSON file", function()
+            vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+            vim.fn.writefile({}, path)
+
+            current_time = 1000
+            local scores = db.read_scores("p", { "k" })
+            assert.are.same({}, scores)
+            assert.is_true(db.is_available())
+
+            current_time = 2000
+            db.record("p", "item")
+
+            local store = read_json(path)
+            assert.are.equal(1, store.version)
+            assert.is_table(store.providers)
+            assert.are.equal(1, store.providers.p.item.selected_count)
+        end)
+
         it("normalizes and caches minimal JSON file", function()
             -- Write an empty JSON object to the file
             vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
