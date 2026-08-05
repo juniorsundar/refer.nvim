@@ -77,6 +77,20 @@ There are already some sorters registered:
 
 ## Installation
 
+Using `vim.pack`:
+
+```lua
+vim.pack.add { src = "https://github.com/juniorsundar/refer.nvim" }
+-- Optional
+-- vim.pack.add { src = "https://github.com/saghen/blink.cmp" }
+-- OR
+-- vim.pack.add { src = "https://github.com/nvim-mini/mini.fuzzy" }
+
+require("refer").setup (
+-- opts
+)
+```
+
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
