@@ -58,9 +58,10 @@ fuzzy sorter implementations.
 
 There are already some sorters registered:
 
-- **Blink:** Rust-based, extremely fast (Default for static lists) (Requires
-  `blink.cmp` installed. Or else it will download just the library from
-  GitHub.).
+- **Blink:** Rust-based, extremely fast (Default for static lists). Works
+  with any installed `blink.cmp` (v1.x or v2.0+). If `blink.cmp` is not
+  installed at all, refer.nvim will *prompt* you before downloading
+  the pre-built v1.10.2 fuzzy matcher library.
 - **Native:** Vim's `matchfuzzy` (Vim is generous... `:h matchfuzzy()`.).
 - **Mini:** Support for `mini.fuzzy` if installed (This supports strings with
   spaces in them, unlike the above two options.).

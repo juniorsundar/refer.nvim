@@ -4,11 +4,14 @@ local M = {}
 local VERSION = "v1.10.2"
 local BASE_URL = "https://github.com/Saghen/blink.cmp/releases/download"
 
----@type boolean Whether the module has been loaded
+---@type boolean Whether the Rust module has been loaded successfully
 local has_loaded = false
 
----@type table|nil The loaded Rust module
+---@type table|nil The loaded Rust module (from an installed+built blink.cmp)
 local rust_module = nil
+
+---@type boolean Whether the user has declined the download prompt
+local declined_download = false
 
 ---@type boolean Whether a download is in progress
 local is_downloading = false
@@ -54,7 +57,7 @@ local function get_system_triple()
     return nil
 end
 
----Get the local path for the library
+---Get the local path for the fallback library
 ---@return string path Path to the library file
 local function get_lib_path()
     local info = debug.getinfo(1, "S")
@@ -63,27 +66,43 @@ local function get_lib_path()
     return script_dir .. "libblink_cmp_fuzzy" .. get_lib_extension()
 end
 
----Download the binary if missing
----@return boolean started_download Whether download was started
-local function ensure_binary()
-    if has_loaded or is_downloading then
-        return false
+---Prompt the user before downloading the pre-built binary.
+---@param callback fun(accepted: boolean) Called with the user's decision.
+local function prompt_download(callback)
+    if declined_download then
+        callback(false)
+        return
     end
 
-    -- Skip download if requested (e.g. during tests)
-    if os.getenv "REFER_SKIP_DOWNLOAD" then
-        return false
-    end
+    vim.schedule(function()
+        vim.ui.select({ "Yes", "No" }, {
+            prompt = "Refer: blink.cmp is not installed. Download the pre-built fuzzy matcher binary ("
+                .. VERSION
+                .. ")?",
+            kind = "confirm",
+        }, function(choice)
+            local accepted = choice == "Yes"
+            if not accepted then
+                declined_download = true
+            end
+            callback(accepted)
+        end)
+    end)
+end
 
-    local lib_path = get_lib_path()
-    if vim.uv.fs_stat(lib_path) then
-        return false
-    end
-
+---Download the pre-built binary for the current platform.
+---@param lib_path string Where to write the library file.
+---@param on_done fun(success: boolean, err: string|nil)
+local function download_binary(lib_path, on_done)
     local triple = get_system_triple()
     if not triple then
-        vim.notify("Refer: System not supported for pre-built blink-fuzzy binaries.", vim.log.levels.ERROR)
-        return false
+        on_done(false, "System not supported for pre-built blink-fuzzy binaries.")
+        return
+    end
+
+    if vim.fn.executable "curl" ~= 1 then
+        on_done(false, "curl is not installed.")
+        return
     end
 
     local url = string.format("%s/%s/%s%s", BASE_URL, VERSION, triple, get_lib_extension())
@@ -107,34 +126,22 @@ local function ensure_binary()
             vim.schedule(function()
                 vim.notify("Refer: Fuzzy matcher downloaded successfully.", vim.log.levels.INFO)
             end)
+            on_done(true, nil)
         else
+            local err = (out.stderr or "unknown error")
             vim.schedule(function()
-                vim.notify(
-                    "Refer: Failed to download fuzzy matcher: " .. (out.stderr or "unknown error"),
-                    vim.log.levels.ERROR
-                )
+                vim.notify("Refer: Failed to download fuzzy matcher: " .. err, vim.log.levels.ERROR)
             end)
+            on_done(false, err)
         end
     end)
-
-    return true
 end
 
----Load the Rust module
----@return table|nil module The loaded module or nil
-local function load_module()
-    local has_blink, blink = pcall(require, "blink.cmp.fuzzy.rust")
-    if has_blink then
-        return blink
-    end
-
-    if has_loaded then
-        return rust_module
-    end
-
+---Attempt to load the fallback pre-built library directly via package.loadlib.
+---@return table|nil module The loaded module, or nil if it could not be loaded.
+local function load_fallback_lib()
     local lib_path = get_lib_path()
     if not vim.uv.fs_stat(lib_path) then
-        ensure_binary()
         return nil
     end
 
@@ -142,7 +149,6 @@ local function load_module()
     if not open_func then
         if not is_downloading then
             vim.notify("Refer: Failed to load fuzzy lib: " .. (err or "unknown"), vim.log.levels.ERROR)
-            is_downloading = true
         end
         return nil
     end
@@ -152,8 +158,46 @@ local function load_module()
     return rust_module
 end
 
----Check if blink is available
----@return boolean available Whether blink fuzzy matcher is available
+---Load the Rust module.
+---@return table|nil module The loaded module or nil
+local function load_module()
+    if has_loaded and rust_module then
+        return rust_module
+    end
+
+    if os.getenv "REFER_SKIP_DOWNLOAD" then
+        return nil
+    end
+
+    local has_blink, blink = pcall(require, "blink.cmp.fuzzy.rust")
+    if has_blink then
+        rust_module = blink
+        has_loaded = true
+        return rust_module
+    end
+
+    local fallback = load_fallback_lib()
+    if fallback then
+        return fallback
+    end
+
+    if is_downloading or declined_download then
+        return nil
+    end
+
+    prompt_download(function(accepted)
+        if not accepted then
+            return
+        end
+        local lib_path = get_lib_path()
+        download_binary(lib_path, function() end)
+    end)
+
+    return nil
+end
+
+---Check if blink is available.
+---@return boolean available Whether the blink fuzzy matcher is available
 function M.is_available()
     return load_module() ~= nil
 end

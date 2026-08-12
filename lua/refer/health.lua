@@ -81,9 +81,13 @@ function M.check()
         if blink.is_available() then
             ok "Blink fuzzy matcher is available"
         else
-            warn "Blink fuzzy matcher is not available. It will be downloaded on first use."
+            if not (pcall(require, "blink.cmp") or pcall(require, "blink.cmp.fuzzy.rust")) then
+                info "blink.cmp is not installed. Refer.nvim will prompt to download the pre-built v1.10.2 fuzzy matcher on first use (opt-in)."
+            else
+                info "blink.cmp is installed but the fuzzy Rust module is not built yet. Run :h blink.cmp.build() (v2) or ensure the pre-built binary is present (v1)."
+            end
             if vim.fn.executable "curl" ~= 1 then
-                error "Cannot download fuzzy matcher: curl is missing."
+                warn "curl is missing; the pre-built fuzzy matcher cannot be downloaded."
             end
 
             local os_name = jit.os:lower()
@@ -91,7 +95,7 @@ function M.check()
             info(string.format("System detected: OS=%s, Arch=%s", os_name, arch))
 
             if not (os_name == "linux" or os_name == "osx" or os_name == "mac" or os_name == "windows") then
-                error "Unsupported OS for pre-built binaries"
+                warn "Unsupported OS for pre-built binaries"
             end
         end
     else
