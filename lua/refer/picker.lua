@@ -39,6 +39,7 @@ local actions = require "refer.actions"
 ---@field keymaps? table<string, string|fun(selection: string, builtin: BuiltinContext)> Keymap definitions
 ---@field custom_sorters? table<string, fun(items: table, query: string): table> Custom sorters to register
 ---@field custom_parsers? table<string, Schema> Custom parsers to register
+---@field blink_prepare? fun(): any User-supplied prepare hook. Called when the blink.cmp.fuzzy.rust native-module load fails, before any fallback download. Opaque to refer.
 ---@field max_height_percent? number Window height percentage (default: 0.4)
 ---@field max_height? number Maximum window height in lines
 ---@field min_height? number Minimum window height in lines (default: 1)

@@ -16,6 +16,17 @@ local declined_download = false
 ---@type boolean Whether a download is in progress
 local is_downloading = false
 
+---@type function|nil User-supplied prepare hook. Called when the blink native-module
+-- load fails, before falling back to a download. A truthy return retries the
+-- native-module load; a falsy return falls through to the download prompt.
+local prepare_hook = nil
+
+---Set the user-supplied prepare hook. Truthy retries the native-module load.
+---@param hook function|nil The hook, or nil to clear it.
+function M.set_prepare_hook(hook)
+    prepare_hook = hook
+end
+
 ---Get the library extension for the current OS
 ---@return string extension ".so", ".dylib", or ".dll"
 local function get_lib_extension()
@@ -174,6 +185,18 @@ local function load_module()
         rust_module = blink
         has_loaded = true
         return rust_module
+    end
+
+    if prepare_hook then
+        local ok, result = pcall(prepare_hook)
+        if ok and result then
+            local retry_ok, mod = pcall(require, "blink.cmp.fuzzy.rust")
+            if retry_ok then
+                rust_module = mod
+                has_loaded = true
+                return rust_module
+            end
+        end
     end
 
     local fallback = load_fallback_lib()

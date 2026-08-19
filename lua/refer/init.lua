@@ -156,6 +156,10 @@ function M.setup(opts)
             util.register_parser(name, schema)
         end
     end
+    -- Forward the opaque prepare hook to refer.blink. It is called when the
+    -- blink native-module load fails and may make the module loadable; refer
+    -- treats it as an opaque function.
+    require("refer.blink").set_prepare_hook(opts.blink_prepare)
     default_opts = vim.tbl_deep_extend("force", default_opts, opts)
     if opts.extras ~= nil then
         default_opts.extras = vim.deepcopy(opts.extras)
