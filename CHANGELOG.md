@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/juniorsundar/refer.nvim/compare/v0.7.1...v0.8.0) (2026-08-19)
+
+
+### Features
+
+* add blink native-module prepare hook ([e813a00](https://github.com/juniorsundar/refer.nvim/commit/e813a0075c4646473d5a5609dddf51c37901c3ca))
+
+
+### Bug Fixes
+
+* **blink:** Support for v2.X verified ([bebaa2b](https://github.com/juniorsundar/refer.nvim/commit/bebaa2bd27a8a26d9460abd92174b505e23e7666))
+
+
+### Documentation
+
+* **README:** Add install instructions for `vim.pack` ([ffc21c8](https://github.com/juniorsundar/refer.nvim/commit/ffc21c860bda14e1f324bcb29b6b3a2ec55a3a53))
+
 ## [0.7.1](https://github.com/juniorsundar/refer.nvim/compare/v0.7.0...v0.7.1) (2026-05-20)
 
 
