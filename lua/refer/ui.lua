@@ -3,6 +3,23 @@ local highlight = require "refer.highlight"
 
 local M = {}
 
+---Window-config keys that are safe to pass back to `nvim_win_set_config`
+---when restoring a stashed float geometry.
+local RESTORE_KEYS = {
+    "relative",
+    "anchor",
+    "row",
+    "col",
+    "width",
+    "height",
+    "border",
+    "title",
+    "title_pos",
+    "zindex",
+    "style",
+    "focusable",
+}
+
 ---@class ReferUI
 ---@field base_prompt string The prompt text to display
 ---@field opts table Options table
@@ -16,6 +33,8 @@ local M = {}
 ---@field input_win number|nil Input window handle
 ---@field results_buf number|nil Results buffer handle
 ---@field results_win number|nil Results window handle
+---@field float_stash table<number, table> Original configs of floats moved out of the way
+---@field reserved_lines number Bottom rows currently reserved from overlapping floats
 local UI = {}
 UI.__index = UI
 
@@ -34,6 +53,8 @@ function M.new(prompt_text, opts)
     self.ns_id = self.ns_matches -- backward-compat alias used by highlight.lua
     self.prompt_ns = api.nvim_create_namespace "refer_prompt"
     self.is_rendering = false
+    self.float_stash = {}
+    self.reserved_lines = 0
     return self
 end
 
@@ -50,6 +71,93 @@ function UI:get_height(count)
     local height = math.min(max_lines, count)
     local min_lines = self.opts.min_height or 1
     return math.max(min_lines, height)
+end
+
+---Temporarily move editor-relative floating windows out of the
+---bottom strip that the split-based picker occupies, so the picker
+---is not hidden behind them.
+---Set `opts.ui.avoid_floats = false` to disable.
+---@param needed_lines number Rows the picker needs at the bottom of the screen
+function UI:_reserve_bottom_space(needed_lines)
+    if self.opts.ui and self.opts.ui.avoid_floats == false then
+        return
+    end
+
+    if needed_lines <= (self.reserved_lines or 0) then
+        return
+    end
+
+    local area_bottom = vim.o.lines - vim.o.cmdheight
+    needed_lines = math.min(needed_lines, math.max(1, area_bottom - 2))
+    if needed_lines <= (self.reserved_lines or 0) then
+        return
+    end
+    self.reserved_lines = needed_lines
+
+    local strip_top = area_bottom - needed_lines
+
+    for win in pairs(self.float_stash) do
+        if not api.nvim_win_is_valid(win) then
+            self.float_stash[win] = nil
+        end
+    end
+
+    for _, win in ipairs(api.nvim_tabpage_list_wins(0)) do
+        local ok, config = pcall(api.nvim_win_get_config, win)
+        if not ok or config.relative ~= "editor" then
+            -- Only editor-relative floats are managed. Window-relative floats
+            -- (e.g. statusline overlays) belong to owners that reposition them
+            -- themselves when the layout changes.
+        elseif type(config.row) ~= "number" or type(config.col) ~= "number" or type(config.height) ~= "number" then
+            -- Percentage/callable geometry: leave untouched.
+        else
+            local base = self.float_stash[win] or config
+            local anchored_bottom = base.anchor == "SW" or base.anchor == "S" or base.anchor == "SE"
+            local top = anchored_bottom and (base.row - base.height) or base.row
+            local bottom = anchored_bottom and base.row or (base.row + base.height)
+
+            if bottom >= strip_top then
+                local new_row, new_height
+                if anchored_bottom then
+                    new_row = strip_top - 1
+                    new_height = base.height - (bottom - new_row)
+                else
+                    new_row = base.row
+                    new_height = strip_top - top
+                end
+
+                if new_height >= 1 then
+                    self.float_stash[win] = base
+                    pcall(
+                        api.nvim_win_set_config,
+                        win,
+                        { relative = base.relative, row = new_row, col = base.col, height = new_height }
+                    )
+                end
+            end
+        end
+    end
+end
+
+---Restore all floating windows moved out of the way by `_reserve_bottom_space`
+---and clear the reservation.
+function UI:_restore_floats()
+    for win, config in pairs(self.float_stash) do
+        if api.nvim_win_is_valid(win) then
+            local restore = {}
+            for _, key in ipairs(RESTORE_KEYS) do
+                if config[key] ~= nil then
+                    restore[key] = config[key]
+                end
+            end
+            if config.relative == "win" and config.win then
+                restore.win = config.win
+            end
+            pcall(api.nvim_win_set_config, win, restore)
+        end
+    end
+    self.float_stash = {}
+    self.reserved_lines = 0
 end
 
 ---Create picker windows
@@ -69,6 +177,12 @@ function UI:create_windows(initial_count)
     end
 
     local initial_height = self:get_height(initial_count or 0)
+
+    -- The picker occupies `results + input` content lines plus the native
+    -- statusline of each split window; reserve that strip from overlapping
+    -- floats before the splits are created.
+    self._statusline_rows = vim.o.laststatus > 0 and 2 or 0
+    self:_reserve_bottom_space(initial_height + 1 + self._statusline_rows)
 
     if input_pos == "bottom" then
         vim.cmd "botright 1split"
@@ -168,6 +282,8 @@ function UI:render(matches, selected_index, marked)
     local current = selected_index
 
     local win_height = self:get_height(total)
+
+    self:_reserve_bottom_space(win_height + 1 + (self._statusline_rows or 0))
 
     if self.results_win and api.nvim_win_is_valid(self.results_win) then
         api.nvim_win_set_height(self.results_win, win_height)
@@ -433,6 +549,8 @@ end
 
 ---Close all picker windows and buffers
 function UI:close()
+    self:_restore_floats()
+
     if self.results_win and api.nvim_win_is_valid(self.results_win) then
         pcall(api.nvim_win_close, self.results_win, true)
     end
