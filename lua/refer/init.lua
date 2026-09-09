@@ -176,11 +176,27 @@ end
 
 ---Open a picker with items or a provider function
 ---@param items_or_provider table|fun(query: string): table List of strings or a function that returns items based on query
----@param on_select fun(selection: string, data: SelectionData|nil)|nil Callback when item is selected
+---@param on_select fun(selection: string, data: SelectionData|nil)|nil Callback when item is selected.
 ---@param opts ReferOptions|nil Options to override defaults
 ---@return Picker picker The picker instance
 function M.pick(items_or_provider, on_select, opts)
-    opts = vim.tbl_deep_extend("force", default_opts, opts or {})
+    opts = vim.deepcopy(opts or {})
+
+    if opts.multiselect then
+        -- Multiselect mode: <Tab> toggles marks, <CR> delivers all marked
+        -- entries (or the highlighted one) as a list.
+        opts.keymaps = opts.keymaps or {}
+        local multiselect_maps = {
+            ["<Tab>"] = { action = "toggle_mark", desc = "Toggle mark" },
+            ["<CR>"] = { action = "select_marked", desc = "Select marked entries" },
+            ["<C-Space>"] = { action = "select_all", desc = "Mark all" },
+        }
+        for key, map in pairs(multiselect_maps) do
+            opts.keymaps[key] = opts.keymaps[key] or map
+        end
+    end
+
+    opts = vim.tbl_deep_extend("force", default_opts, opts)
     if on_select then
         opts.on_select = on_select
     end

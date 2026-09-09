@@ -118,6 +118,42 @@ function M.get_defaults(picker)
             end
         end,
 
+        -- Deliver all marked entries to on_select in a single call, as a list
+        -- of texts in original item order.
+        select_marked = function()
+            local list = {}
+            local seen = {}
+
+            local sources = {}
+            if type(picker.items_or_provider) == "table" then
+                sources[#sources + 1] = picker.items_or_provider
+            end
+            sources[#sources + 1] = picker.current_matches
+
+            for _, source in ipairs(sources) do
+                for _, item in ipairs(source) do
+                    local text = type(item) == "table" and item.text or item
+                    if text and picker.marked[text] and not seen[text] then
+                        seen[text] = true
+                        list[#list + 1] = text
+                    end
+                end
+            end
+
+            if #list == 0 then
+                local item = picker.current_matches[picker.selected_index]
+                if not item then
+                    return
+                end
+                list[1] = type(item) == "table" and item.text or item
+            end
+
+            picker:close()
+            if picker.on_select then
+                picker.on_select(list)
+            end
+        end,
+
         edit_entry = function()
             open_entry(nil)
         end,
