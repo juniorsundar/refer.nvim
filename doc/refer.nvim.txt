@@ -269,7 +269,34 @@ You can customize key bindings inside the picker window.
 
   —          select_entry          Call on_select with item and its
                                    attached data
+
+  —          select_marked         Call on_select with all marked entries
+                                   as a list
   ------------------------------------------------------------------------
+
+MULTISELECT ~
+
+Pass `multiselect = true` to `pick()` to choose several entries at once:
+
+>lua
+    local refer = require("refer")
+    
+    refer.pick(
+        { "file1.txt", "file2.txt", "file3.txt" },
+        function(selection)
+            -- in multiselect mode, selection is always a list
+            print("Picked: " .. table.concat(selection, ", "))
+        end,
+        { multiselect = true }
+    )
+<
+
+- `<Tab>` toggles a mark and moves down; `<CR>` delivers all marked entries as
+    a list.
+- Marks survive filtering.
+- These bindings are per-picker defaults - your own keymaps for the same keys
+    win.
+
 
 BRING YOUR OWN FUZZY (CUSTOM SORTERS) ~
 
