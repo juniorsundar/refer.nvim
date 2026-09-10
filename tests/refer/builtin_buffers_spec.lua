@@ -76,6 +76,48 @@ describe("builtin.buffers", function()
         assert.is_true(found)
     end)
 
+    it("clamps a stale terminal-buffer cursor location when selected", function()
+        vim.cmd "terminal"
+        local terminal_buf = vim.api.nvim_get_current_buf()
+        local channel = vim.bo[terminal_buf].channel
+
+        vim.api.nvim_chan_send(channel, "for i in $(seq 1 80); do echo line$i; done\n")
+        assert.is_true(vim.wait(1500, function()
+            return vim.api.nvim_buf_line_count(terminal_buf) >= 80
+        end))
+
+        local terminal_name = vim.api.nvim_buf_get_name(terminal_buf)
+        vim.cmd "enew"
+
+        picker = refer.pick(
+            {
+                {
+                    text = "terminal",
+                    data = { filename = terminal_name, lnum = 50, col = 1 },
+                },
+            },
+            util.jump_to_location,
+            {
+                available_sorters = { "lua" },
+                default_sorter = "lua",
+                preview = { enabled = false },
+            }
+        )
+        picker.current_matches = picker.items_or_provider
+
+        vim.api.nvim_chan_send(channel, "clear\n")
+        assert.is_true(vim.wait(1500, function()
+            return vim.api.nvim_buf_line_count(terminal_buf) < 50
+        end))
+
+        local ok, err = pcall(picker.actions.select_entry)
+        picker = nil
+        assert.is_true(ok, err)
+
+        local cursor = vim.api.nvim_win_get_cursor(0)
+        assert.are.same(vim.api.nvim_buf_line_count(terminal_buf), cursor[1])
+    end)
+
     it("skips unlisted buffers", function()
         local file = tmpdir .. "/unlisted.lua"
         local f = io.open(file, "w")

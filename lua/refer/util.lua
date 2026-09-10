@@ -210,7 +210,10 @@ function M.jump_to_location(selection, data_or_format)
         vim.cmd("edit " .. vim.fn.fnameescape(data.filename))
 
         if data.lnum and data.col then
-            vim.api.nvim_win_set_cursor(0, { data.lnum, data.col - 1 })
+            local line_count = vim.api.nvim_buf_line_count(0)
+            local lnum = math.min(math.max(data.lnum, 1), line_count)
+            local col = math.max(data.col - 1, 0)
+            vim.api.nvim_win_set_cursor(0, { lnum, col })
         end
     end
 end
