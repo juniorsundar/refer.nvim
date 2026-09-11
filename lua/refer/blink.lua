@@ -148,6 +148,14 @@ local function download_binary(lib_path, on_done)
     end)
 end
 
+---Drop a stale failed-require sentinel from package.loaded before a retry.
+local function clear_failed_require_sentinel()
+    local cached = package.loaded["blink.cmp.fuzzy.rust"]
+    if cached ~= nil and type(cached) ~= "table" then
+        package.loaded["blink.cmp.fuzzy.rust"] = nil
+    end
+end
+
 ---Attempt to load the fallback pre-built library directly via package.loadlib.
 ---@return table|nil module The loaded module, or nil if it could not be loaded.
 local function load_fallback_lib()
@@ -190,6 +198,7 @@ local function load_module()
     if prepare_hook then
         local ok, result = pcall(prepare_hook)
         if ok and result then
+            clear_failed_require_sentinel()
             local retry_ok, mod = pcall(require, "blink.cmp.fuzzy.rust")
             if retry_ok then
                 rust_module = mod

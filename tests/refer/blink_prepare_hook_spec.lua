@@ -168,6 +168,87 @@ describe("refer.blink prepare hook", function()
         assert.are.equal(1, prompt_calls, "the fallback prompt fires once for users without a hook")
     end)
 
+    -- Regression: LuaJIT's require (Lua 5.2-style) leaves a truthy sentinel in
+    -- package.loaded[name] when a loader errors, and every later require
+    -- reports "loop or previous error loading module" instead of re-running
+    -- the loader.
+    it("retries the real loader after a truthy hook prepares the module (no stale failed-require sentinel)", function()
+        local hook_calls = 0
+        local loader_calls = 0
+        local rust = {
+            set_provider_items = function() end,
+            fuzzy = function()
+                return {}, {}
+            end,
+        }
+
+        local refer = reload_refer()
+        reload_blink()
+        package.loaded["blink.cmp.fuzzy.rust"] = nil
+        package.preload["blink.cmp.fuzzy.rust"] = function()
+            loader_calls = loader_calls + 1
+            if loader_calls == 1 then
+                -- Simulate the native binary being absent before the hook runs.
+                error("libblink_cmp_fuzzy.so: cannot open shared object file", 0)
+            end
+            return rust
+        end
+
+        refer.setup {
+            blink_prepare = function()
+                hook_calls = hook_calls + 1
+                -- The hook has "built" the binary: the next loader run succeeds.
+                return true
+            end,
+        }
+
+        local blink = require "refer.blink"
+        local available = blink.is_available()
+
+        assert.is_true(available, "retry after a truthy hook must load the module via the real require path")
+        assert.are.equal(1, hook_calls, "the hook is called exactly once on a failing load")
+        assert.are.equal(
+            2,
+            loader_calls,
+            "the loader must actually re-run; a cached failed-require sentinel would short-circuit it"
+        )
+        assert.are.equal(0, prompt_calls, "a truthy hook skips the download prompt")
+    end)
+
+    it("a truthy hook whose retry still fails does not leave a valid module wiped", function()
+        local hook_calls = 0
+        local refer = reload_refer()
+        reload_blink()
+        set_rust_module(nil)
+
+        refer.setup {
+            blink_prepare = function()
+                hook_calls = hook_calls + 1
+                return true
+            end,
+        }
+
+        local blink = require "refer.blink"
+        assert.is_false(blink.is_available(), "a hook that cannot fix the load leaves refer unavailable")
+        assert.are.equal(1, hook_calls)
+        flush_prompt()
+        assert.are.equal(1, prompt_calls)
+
+        -- A later successful install (e.g. the user builds the binary) must load
+        -- cleanly: the failed-require sentinel must not have been promoted to a
+        -- "valid" cache entry, and the retry path must not have clobbered a
+        -- valid table placed into package.loaded by external code.
+        local rust = {
+            set_provider_items = function() end,
+            fuzzy = function()
+                return {}, {}
+            end,
+        }
+        set_rust_module(rust)
+        assert.is_true(blink.is_available(), "a valid module installed later is picked up")
+        assert.are.equal(rust, package.loaded["blink.cmp.fuzzy.rust"], "the valid cached module table is preserved")
+    end)
+
     it("falls through to the download prompt when the hook returns falsy", function()
         local hook_calls = 0
         local refer = reload_refer()
