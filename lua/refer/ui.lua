@@ -45,7 +45,7 @@ UI.__index = UI
 function M.new(prompt_text, opts)
     ---@type ReferUI
     local self = setmetatable({}, UI)
-    self.base_prompt = prompt_text
+    self.base_prompt = prompt_text .. " "
     self.opts = opts or {}
     self.ns_cursor = api.nvim_create_namespace "refer_cursor"
     self.ns_matches = api.nvim_create_namespace "refer_matches"
