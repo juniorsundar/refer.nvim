@@ -191,7 +191,8 @@ function Picker.new(items_or_provider, opts)
     end
 
     -- Blink setup
-    self.use_blink = fuzzy.has_blink() and type(items_or_provider) == "table" and not self.custom_sorter
+    -- has_blink() last: probing it may prompt a download, only do so when blink is the sorter
+    self.use_blink = not self.custom_sorter and type(items_or_provider) == "table" and fuzzy.has_blink()
     if self.use_blink then
         fuzzy.register_items(self.items_or_provider)
     end

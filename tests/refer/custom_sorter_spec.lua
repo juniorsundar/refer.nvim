@@ -56,4 +56,20 @@ describe("refer (custom sorters)", function()
         fuzzy.register_sorter(123, function() end)
         assert.is_nil(fuzzy.sorters[123])
     end)
+
+    it("never probes blink when the default sorter is not blink", function()
+        local original = fuzzy.has_blink
+        local probed = false
+        fuzzy.has_blink = function()
+            probed = true
+            return false
+        end
+
+        local picker = refer.pick({ "a", "b" }, function() end, { default_sorter = "lua" })
+        picker:close()
+        fuzzy.has_blink = original
+
+        assert.is_false(probed)
+        assert.is_false(picker.use_blink)
+    end)
 end)
