@@ -112,7 +112,7 @@ describe("refer.pick", function()
             return #picker.current_matches == 1
         end)
 
-        assert.are.same(prompt, picker.ui.base_prompt)
+        assert.are.same(prompt .. " ", picker.ui.base_prompt)
     end)
 
     it("parses selection and passes data to callback", function()
