@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.8.0](https://github.com/juniorsundar/refer.nvim/compare/v0.7.1...v0.8.0) (2026-10-01)
+
+
+### Features
+
+* add blink native-module prepare hook ([e813a00](https://github.com/juniorsundar/refer.nvim/commit/e813a0075c4646473d5a5609dddf51c37901c3ca))
+* Support enabling multi-selection as an opt ([18cf203](https://github.com/juniorsundar/refer.nvim/commit/18cf20330cfc2491fcd4b3fa3e8b9f34baf4ef0b))
+
+
+### Bug Fixes
+
+* **blink:** Support for v2.X verified ([bebaa2b](https://github.com/juniorsundar/refer.nvim/commit/bebaa2bd27a8a26d9460abd92174b505e23e7666))
+* Do not prompt download blink if `default_sorter` isn't ([2ac0669](https://github.com/juniorsundar/refer.nvim/commit/2ac06690fc3f1de758c128453936c5d91d64fcc1))
+* **ui:** Add a space after the prompt ([7df4c4a](https://github.com/juniorsundar/refer.nvim/commit/7df4c4ae90e567adcaf82811c112195c315fe212))
+* **ui:** Move pop-up floats out of the way ([0e68f4b](https://github.com/juniorsundar/refer.nvim/commit/0e68f4b487002fd180f36e12882f835e989d9c0f))
+* verify line_count before buffer switch to avoid out-of-bounds error ([e280c5a](https://github.com/juniorsundar/refer.nvim/commit/e280c5a83cf728001a5bd820a9efc4eaa9ce30d2))
+
+
+### Documentation
+
+* **README:** Add install instructions for `vim.pack` ([ffc21c8](https://github.com/juniorsundar/refer.nvim/commit/ffc21c860bda14e1f324bcb29b6b3a2ec55a3a53))
+
+
+### Tests
+
+* **blink:** Additional guards for preparation of blink.cmp ([1dd5f2a](https://github.com/juniorsundar/refer.nvim/commit/1dd5f2a2093b2d79049c2069f0ab46a0cac989b0))
+* **ui:** Adjust test to account for space after prompt ([4561a68](https://github.com/juniorsundar/refer.nvim/commit/4561a68ab89484620ea7c6e8831795131d05151f))
+
 ## [0.7.1](https://github.com/juniorsundar/refer.nvim/compare/v0.7.0...v0.7.1) (2026-05-20)
 
 
